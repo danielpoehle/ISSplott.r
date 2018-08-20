@@ -179,8 +179,8 @@ for(i in 1:length(folders)){
 for(i in 1:length(spurplanKnoten$CTR)){
   if(i %% 1000 == 0){print(i)}
   if(spurplanKnoten$COORD_PAR[i] == ""){next()}
-  spurplanKnoten$X[i] <- spurplanKnoten$X[which(spurplanKnoten$COORD_PAR[i] == spurplanKnoten$NODE_ID)]
-  spurplanKnoten$Y[i] <- spurplanKnoten$Y[which(spurplanKnoten$COORD_PAR[i] == spurplanKnoten$NODE_ID)]
+  spurplanKnoten$X[i] <- spurplanKnoten$X[which(spurplanKnoten$COORD_PAR[i] == spurplanKnoten$NODE_ID & spurplanKnoten$BTS_NAME == spurplanKnoten$BTS_NAME[i])]
+  spurplanKnoten$Y[i] <- spurplanKnoten$Y[which(spurplanKnoten$COORD_PAR[i] == spurplanKnoten$NODE_ID & spurplanKnoten$BTS_NAME == spurplanKnoten$BTS_NAME[i])]
 }
 
 spurplanabschnitte <- unique(spurplanKnoten$SP_AB_ID)
@@ -198,4 +198,4 @@ for(ab in spurplanabschnitte){
   spurplanKnoten$Y[spurplanKnoten$CTR == fzmp_ctr] <- mean(c(as.numeric(tmp$Y[tmp$CTR == before]), as.numeric(tmp$Y[tmp$CTR == after])))
 }
 
-write.csv2(spurplanKnoten, file = "./INFRA/D2013_46.csv", row.names = F)
+write.csv2(spurplanKnoten, file = "./D2013_46.csv", row.names = F)
