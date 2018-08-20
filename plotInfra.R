@@ -3,7 +3,11 @@ library(data.table)
 library(ggplot2)
 
 spurplanKnoten <- as.data.table(read.csv2(file = "./tmpRBNord.csv", stringsAsFactors = F))
-# bts_list <- c("ABCH", "ABCHG", "ASTT", "A465M", "A464S", "AMUE")
+bts_list <- c("ABCH", "ABCHG", "ASTT", "A465M", "A464S", "AMUE", "A467M", "A466M", 
+              "A469S", "A468S", "ASWA", "A471F", "A470S", "A473F", "A472S", "A475F", 
+              "A474S", "A477W", "A476W", "A977W", "A577W", "AFRD", "A976A", "A576W", 
+              "AAH A", "A479A", "A480R", "A481S", "A482A", "A483R", "A484R", "AQRB", 
+              "ABG", "ABG G")
 
 plotBTS <- function(spurplanKnoten, bts_list){
   p <- ggplot()
@@ -65,11 +69,11 @@ plotInfra <- function(p, tmp){
   p <- p +
     annotate("text", x=mean(tmp$X), y=mean(tmp$Y), label=tmp$BTS_NAME[1], size = 10, color="grey") +
     geom_line(data=tmp, aes(x=X, y=Y, group=SP_AB_ID)) +
-    geom_point(data=tmp, aes(x=X, y=Y, size=3, shape=as.factor(GR))) +
+    geom_point(data=tmp, aes(x=X, y=Y, size=2, shape=as.factor(GR))) +
     theme_minimal() + theme(legend.position="none")
   if(length(fzmp$CTR) > 0){
     p <- p + 
-      geom_point(data=fzmp, aes(x=X, y=Y, color = "red", size = 3)) + 
+      geom_point(data=fzmp, aes(x=X, y=Y, color = "red", size = 2)) + 
       geom_text(data=fzmp, aes(x=X, y=Y, label=NODE_NAME)) 
   }else{
     fzmp <- tmp[1]
@@ -79,4 +83,4 @@ plotInfra <- function(p, tmp){
 }
 
 p <- plotBTS(spurplanKnoten, bts_list)
-ggsave(filename = "./BTSLIST.jpg", plot = p, width = 10*length(bts_list), units = "cm")
+ggsave(filename = "./BTSLIST.jpg", plot = p, width = 6*length(bts_list), units = "cm", limitsize = F)
