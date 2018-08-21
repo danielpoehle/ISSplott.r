@@ -58,3 +58,5 @@ for(i in 1:length(folders)){
     }
   }
 }
+
+write.csv2(betriebsstellenfahrwege, file = "./BTSFW-2013_46_DW.csv", row.names = F)
