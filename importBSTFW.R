@@ -59,4 +59,167 @@ for(i in 1:length(folders)){
   }
 }
 
+
+
+for(b in 1:length(betriebsstellenfahrwege$ID)){
+  tmp_fw <- betriebsstellenfahrwege[b,]
+  v <- unlist(strsplit(tmp_fw$VERLAUF, "#"))
+  abschnitte <- ""
+  id <- spurplanKnoten$SP_AB_ID[spurplanKnoten$NODE_ID == tmp_fw$START_ID & spurplanKnoten$BTS_NAME == tmp_fw$BTS_NAME]
+  if(length(id) != 1){stop("error - no unique abschnitt")}
+  abschnitte <- id
+  ab <- spurplanKnoten$CTR[spurplanKnoten$SP_AB_ID == id]
+  end_ab <- ""
+  if(spurplanKnoten$NODE_ID[spurplanKnoten$CTR == ab[1]] == tmp_fw$START_ID){
+    end_ab <- spurplanKnoten[CTR == ab[length(ab)],]
+  }else{
+    end_ab <- spurplanKnoten[CTR == ab[1],]
+  }
+  if(tmp_fw$START_TYP == "Betriebsstellengrenze"){
+    if(tmp_fw$END_TYP == "Betriebsstellengrenze"){
+      #check if endNode is Betriebsstellengrenze
+      while (end_ab$TYPE != "Betriebsstellengrenze") {
+        p <- unlist(strsplit(end_ab$PARTNER, "#"))
+        if(length(p) == 0){stop("error - no partner found")}
+        if(length(p)> 1){
+          #decide which direction and go to correct partner
+          if(v[1] == "Stamm"){
+            id <- spurplanKnoten$SP_AB_ID[spurplanKnoten$NODE_ID == p[1] & spurplanKnoten$BTS_NAME == tmp_fw$BTS_NAME]
+            p <- p[1]
+          }else{
+            id <- spurplanKnoten$SP_AB_ID[spurplanKnoten$NODE_ID == p[2] & spurplanKnoten$BTS_NAME == tmp_fw$BTS_NAME]
+            p <- p[2]
+          }
+          if(length(id) != 1){stop("error - no unique abschnitt")}
+          v <- v[-1]
+          abschnitte <- paste(abschnitte, id, sep = "#")
+          ab <- spurplanKnoten$CTR[spurplanKnoten$SP_AB_ID == id]
+          if(spurplanKnoten$NODE_ID[spurplanKnoten$CTR == ab[1]] == p){
+            end_ab <- spurplanKnoten[CTR == ab[length(ab)],]
+          }else{
+            end_ab <- spurplanKnoten[CTR == ab[1],]
+          }
+        }else{
+          # go directly to partner
+          if(end_ab$TYPE == "Weichenstamm" || end_ab$TYPE == "WeichenabzweigLinks" || end_ab$TYPE == "WeichenabzweigRechts"){v <- v[-1]}
+          id <- spurplanKnoten$SP_AB_ID[spurplanKnoten$NODE_ID == p[1] & spurplanKnoten$BTS_NAME == tmp_fw$BTS_NAME]
+          if(length(id) != 1){stop("error - no unique abschnitt")}
+          abschnitte <- paste(abschnitte, id, sep = "#")
+          ab <- spurplanKnoten$CTR[spurplanKnoten$SP_AB_ID == id]
+          if(spurplanKnoten$NODE_ID[spurplanKnoten$CTR == ab[1]] == p){
+            end_ab <- spurplanKnoten[CTR == ab[length(ab)],]
+          }else{
+            end_ab <- spurplanKnoten[CTR == ab[1],]
+          }
+        }
+      }
+      if(length(v) > 0){stop("wrong path of btsfw!")}
+      if(end_ab$NODE_ID != tmp_fw$END_ID){stop("wrong exit of btsfw!")}
+    }else{
+      # check if Hp, Prellbock, Gleisende is on abschnitt and stop
+      while(!(tmp_fw$END_ID %in% spurplanKnoten$NODE_ID[spurplanKnoten$SP_AB_ID == id])){
+        p <- unlist(strsplit(end_ab$PARTNER, "#"))
+        if(length(p) == 0){stop("error - no partner found")}
+        if(length(p)> 1){
+          #decide which direction and go to correct partner
+          if(v[1] == "Stamm"){
+            id <- spurplanKnoten$SP_AB_ID[spurplanKnoten$NODE_ID == p[1] & spurplanKnoten$BTS_NAME == tmp_fw$BTS_NAME]
+            p <- p[1]
+          }else{
+            id <- spurplanKnoten$SP_AB_ID[spurplanKnoten$NODE_ID == p[2] & spurplanKnoten$BTS_NAME == tmp_fw$BTS_NAME]
+            p <- p[2]
+          }
+          if(length(id) != 1){stop("error - no unique abschnitt")}
+          v <- v[-1]
+          abschnitte <- paste(abschnitte, id, sep = "#")
+          ab <- spurplanKnoten$CTR[spurplanKnoten$SP_AB_ID == id]
+          if(spurplanKnoten$NODE_ID[spurplanKnoten$CTR == ab[1]] == p){
+            end_ab <- spurplanKnoten[CTR == ab[length(ab)],]
+          }else{
+            end_ab <- spurplanKnoten[CTR == ab[1],]
+          }
+        }else{
+          # go directly to partner
+          if(end_ab$TYPE == "Weichenstamm" || end_ab$TYPE == "WeichenabzweigLinks" || end_ab$TYPE == "WeichenabzweigRechts"){v <- v[-1]}
+          id <- spurplanKnoten$SP_AB_ID[spurplanKnoten$NODE_ID == p[1] & spurplanKnoten$BTS_NAME == tmp_fw$BTS_NAME]
+          if(length(id) != 1){stop("error - no unique abschnitt")}
+          abschnitte <- paste(abschnitte, id, sep = "#")
+          ab <- spurplanKnoten$CTR[spurplanKnoten$SP_AB_ID == id]
+          if(spurplanKnoten$NODE_ID[spurplanKnoten$CTR == ab[1]] == p){
+            end_ab <- spurplanKnoten[CTR == ab[length(ab)],]
+          }else{
+            end_ab <- spurplanKnoten[CTR == ab[1],]
+          }
+        }
+      }
+      if(length(v) > 0){stop("wrong path of btsfw!")}
+      if(end_ab$NODE_ID != tmp_fw$END_ID && end_ab$X != ""){stop("wrong exit of btsfw!")}
+    }
+  }else{
+    while (end_ab$TYPE != "Betriebsstellengrenze") {
+      p <- unlist(strsplit(end_ab$PARTNER, "#"))
+      if(length(p) == 0){
+        if(grepl("Halteplatz", tmp_fw$START_TYP)){
+          v <- unlist(strsplit(tmp_fw$VERLAUF, "#"))
+          abschnitte <- ""
+          id <- spurplanKnoten$SP_AB_ID[spurplanKnoten$NODE_ID == tmp_fw$START_ID & spurplanKnoten$BTS_NAME == tmp_fw$BTS_NAME]
+          ab <- spurplanKnoten$CTR[spurplanKnoten$SP_AB_ID == id]
+          end_ab <- spurplanKnoten[CTR == ab[length(ab)],]
+          next()
+        }else{
+          stop("error - no partner found")
+          }
+      }
+      if(length(p)> 1){
+        #decide which direction and go to correct partner
+        if(length(v) < 1){
+          if(grepl("Halteplatz", tmp_fw$START_TYP)){
+            v <- unlist(strsplit(tmp_fw$VERLAUF, "#"))
+            abschnitte <- ""
+            id <- spurplanKnoten$SP_AB_ID[spurplanKnoten$NODE_ID == tmp_fw$START_ID & spurplanKnoten$BTS_NAME == tmp_fw$BTS_NAME]
+            ab <- spurplanKnoten$CTR[spurplanKnoten$SP_AB_ID == id]
+            end_ab <- spurplanKnoten[CTR == ab[length(ab)],]
+            next()
+          }else{
+            stop("error - no partner found")
+          }
+        }
+        if(v[1] == "Stamm"){
+          id <- spurplanKnoten$SP_AB_ID[spurplanKnoten$NODE_ID == p[1] & spurplanKnoten$BTS_NAME == tmp_fw$BTS_NAME]
+          p <- p[1]
+        }else{
+          id <- spurplanKnoten$SP_AB_ID[spurplanKnoten$NODE_ID == p[2] & spurplanKnoten$BTS_NAME == tmp_fw$BTS_NAME]
+          p <- p[2]
+        }
+        if(length(id) != 1){stop("error - no unique abschnitt")}
+        v <- v[-1]
+        abschnitte <- paste(abschnitte, id, sep = "#")
+        ab <- spurplanKnoten$CTR[spurplanKnoten$SP_AB_ID == id]
+        if(spurplanKnoten$NODE_ID[spurplanKnoten$CTR == ab[1]] == p){
+          end_ab <- spurplanKnoten[CTR == ab[length(ab)],]
+        }else{
+          end_ab <- spurplanKnoten[CTR == ab[1],]
+        }
+      }else{
+        # go directly to partner
+        if(end_ab$TYPE == "Weichenstamm" || end_ab$TYPE == "WeichenabzweigLinks" || end_ab$TYPE == "WeichenabzweigRechts"){v <- v[-1]}
+        id <- spurplanKnoten$SP_AB_ID[spurplanKnoten$NODE_ID == p[1] & spurplanKnoten$BTS_NAME == tmp_fw$BTS_NAME]
+        if(length(id) != 1){stop("error - no unique abschnitt")}
+        abschnitte <- paste(abschnitte, id, sep = "#")
+        ab <- spurplanKnoten$CTR[spurplanKnoten$SP_AB_ID == id]
+        if(spurplanKnoten$NODE_ID[spurplanKnoten$CTR == ab[1]] == p){
+          end_ab <- spurplanKnoten[CTR == ab[length(ab)],]
+        }else{
+          end_ab <- spurplanKnoten[CTR == ab[1],]
+        }
+      }
+    }
+    if(length(v) > 0){stop("wrong path of btsfw!")}
+    if(end_ab$NODE_ID != tmp_fw$END_ID){stop("wrong exit of btsfw!")}
+  }
+  betriebsstellenfahrwege$ABSCHNITTE[b] <- abschnitte
+}
+
+
+
 write.csv2(betriebsstellenfahrwege, file = "./BTSFW-2013_46_DW.csv", row.names = F)
