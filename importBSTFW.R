@@ -161,6 +161,15 @@ for(b in 1:length(betriebsstellenfahrwege$ID)){
          spurplanKnoten$X[spurplanKnoten$NODE_ID == tmp_fw$END_ID & spurplanKnoten$BTS_NAME == tmp_fw$BTS_NAME] != ""){stop("wrong exit of btsfw!")}
     }
   }else{
+    if(end_ab$TYPE == "Betriebsstellengrenze" && end_ab$NODE_ID != tmp_fw$END_ID){
+      if(grepl("Halteplatz", tmp_fw$START_TYP)){
+        v <- unlist(strsplit(tmp_fw$VERLAUF, "#"))
+        abschnitte <- ""
+        id <- spurplanKnoten$SP_AB_ID[spurplanKnoten$NODE_ID == tmp_fw$START_ID & spurplanKnoten$BTS_NAME == tmp_fw$BTS_NAME]
+        ab <- spurplanKnoten$CTR[spurplanKnoten$SP_AB_ID == id]
+        end_ab <- spurplanKnoten[CTR == ab[length(ab)],]
+      }
+    }
     while (end_ab$TYPE != "Betriebsstellengrenze") {
       p <- unlist(strsplit(end_ab$PARTNER, "#"))
       if(length(p) == 0){
