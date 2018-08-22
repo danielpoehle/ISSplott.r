@@ -122,6 +122,10 @@ abschnitte <- "#15932#15952#15918"
 p <- plotBTSFW(ggplot(), generateFWshift(spurplanKnoten, abschnitte))
 plotInfra(p, generateTMPshift(spurplanKnoten, "AA"))
 
+abschnitte <- "1594#1573#1515#1555#1568#1558#1625#1620#1485#1519#1532#1531"
+p <- plotBTSFW(ggplot(), generateFWshift(spurplanKnoten, abschnitte))
+plotInfra(p, generateTMPshift(spurplanKnoten, "FB"))
+
 abschnitte <- "5046#4997#5058#5073#5087#5078#4994#5056#5066#4996#5075#5029#5061#5002"
 p <- plotBTSFW(ggplot(), generateFWshift(spurplanKnoten, abschnitte))
 bts_list <- c("FFU G", "FFU")

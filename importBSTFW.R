@@ -59,6 +59,9 @@ for(i in 1:length(folders)){
   }
 }
 
+redVerlauf <- c("Weichenstamm", "WeichenabzweigLinks", "WeichenabzweigRechts", "KreuzungsweicheAnfangLinks", 
+                "KreuzungsweicheEndeLinks")
+
 
 
 for(b in 1:length(betriebsstellenfahrwege$ID)){
@@ -102,7 +105,7 @@ for(b in 1:length(betriebsstellenfahrwege$ID)){
           }
         }else{
           # go directly to partner
-          if(end_ab$TYPE == "Weichenstamm" || end_ab$TYPE == "WeichenabzweigLinks" || end_ab$TYPE == "WeichenabzweigRechts"){v <- v[-1]}
+          if(end_ab$TYPE %in% redVerlauf){v <- v[-1]}
           id <- spurplanKnoten$SP_AB_ID[spurplanKnoten$NODE_ID == p[1] & spurplanKnoten$BTS_NAME == tmp_fw$BTS_NAME]
           if(length(id) != 1){stop("error - no unique abschnitt")}
           abschnitte <- paste(abschnitte, id, sep = "#")
@@ -141,7 +144,7 @@ for(b in 1:length(betriebsstellenfahrwege$ID)){
           }
         }else{
           # go directly to partner
-          if(end_ab$TYPE == "Weichenstamm" || end_ab$TYPE == "WeichenabzweigLinks" || end_ab$TYPE == "WeichenabzweigRechts"){v <- v[-1]}
+          if(end_ab$TYPE %in% redVerlauf){v <- v[-1]}
           id <- spurplanKnoten$SP_AB_ID[spurplanKnoten$NODE_ID == p[1] & spurplanKnoten$BTS_NAME == tmp_fw$BTS_NAME]
           if(length(id) != 1){stop("error - no unique abschnitt")}
           abschnitte <- paste(abschnitte, id, sep = "#")
@@ -204,7 +207,7 @@ for(b in 1:length(betriebsstellenfahrwege$ID)){
         }
       }else{
         # go directly to partner
-        if(end_ab$TYPE == "Weichenstamm" || end_ab$TYPE == "WeichenabzweigLinks" || end_ab$TYPE == "WeichenabzweigRechts"){v <- v[-1]}
+        if(end_ab$TYPE %in% redVerlauf){v <- v[-1]}
         id <- spurplanKnoten$SP_AB_ID[spurplanKnoten$NODE_ID == p[1] & spurplanKnoten$BTS_NAME == tmp_fw$BTS_NAME]
         if(length(id) != 1){stop("error - no unique abschnitt")}
         abschnitte <- paste(abschnitte, id, sep = "#")
