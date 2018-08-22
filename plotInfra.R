@@ -128,4 +128,4 @@ bts_list <- c("FFU G", "FFU")
 p <- plotBTS(spurplanKnoten, bts_list)
 plotInfra(p, generateTMPshift(spurplanKnoten, "FFU G"))
 
-plotInfra(ggplot(), generateTMPshift(spurplanKnoten, "FKRO"))
+plotInfra(ggplot(), generateTMPshift(spurplanKnoten, "FALZ"))
