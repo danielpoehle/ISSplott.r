@@ -90,7 +90,8 @@ for(i in 1:length(folders)){
             y <- ""
             addToFrame <- F
             if(type == "Fahrzeitmesspunkt" || type == "HalteplatzRzLinksF" || type == "HalteplatzRzLinksS" ||
-               type == "HalteplatzRzRechtsF" || type == "HalteplatzRzRechtsS" || type == "HalteplatzGzF" || type == "HalteplatzGzS"){
+               type == "HalteplatzRzRechtsF" || type == "HalteplatzRzRechtsS" || type == "HalteplatzGzF" || 
+               type == "HalteplatzGzS" || type == "HalteplatzRzRechtsLinksS" || type == "HalteplatzRzRechtsLinksF"){
               # get FZMP node for annotations
               node_name <- xmlValue(knoten[[m]][["Name"]])
               if(length(node_name) <= 0){node_name <- ""}
@@ -198,4 +199,4 @@ for(ab in spurplanabschnitte){
   spurplanKnoten$Y[spurplanKnoten$CTR == fzmp_ctr] <- mean(c(as.numeric(tmp$Y[tmp$CTR == before]), as.numeric(tmp$Y[tmp$CTR == after])))
 }
 
-write.csv2(spurplanKnoten, file = "./D2013_46.csv", row.names = F)
+write.csv2(spurplanKnoten, file = "./D2013_46_v02.csv", row.names = F)

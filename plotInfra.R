@@ -2,7 +2,7 @@ setwd("./Dokumente/ISSplott.r/")
 library(data.table)
 library(ggplot2)
 
-spurplanKnoten <- as.data.table(read.csv2(file = "./D2013_46.csv", stringsAsFactors = F))
+spurplanKnoten <- as.data.table(read.csv2(file = "./D2013_46_v02.csv.csv", stringsAsFactors = F))
 betriebsstellenfahrwege <- as.data.table(read.csv2(file = "./BTSFW-2013_46_DW.csv", stringsAsFactors = F))
 bts_list <- c("ABCH", "ABCHG", "ASTT", "A465M", "A464S", "AMUE", "A467M", "A466M", 
               "A469S", "A468S", "ASWA", "A471F", "A470S", "A473F", "A472S", "A475F", 
