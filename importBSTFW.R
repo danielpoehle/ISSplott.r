@@ -250,4 +250,4 @@ for(b in 6800:length(betriebsstellenfahrwege$ID)){
 
 
 
-write.csv2(betriebsstellenfahrwege, file = "./BTSFW-2013_46_DW.csv", row.names = F)
+write.csv2(betriebsstellenfahrwege, file = "./BTSFW-2013_46_DW_v02.csv", row.names = F)

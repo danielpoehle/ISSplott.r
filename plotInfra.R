@@ -2,19 +2,46 @@ setwd("./Dokumente/ISSplott.r/")
 library(data.table)
 library(ggplot2)
 
-spurplanKnoten <- as.data.table(read.csv2(file = "./D2013_46_v02.csv.csv", stringsAsFactors = F))
-betriebsstellenfahrwege <- as.data.table(read.csv2(file = "./BTSFW-2013_46_DW.csv", stringsAsFactors = F))
-bts_list <- c("ABCH", "ABCHG", "ASTT", "A465M", "A464S", "AMUE", "A467M", "A466M", 
-              "A469S", "A468S", "ASWA", "A471F", "A470S", "A473F", "A472S", "A475F", 
-              "A474S", "A477W", "A476W", "A977W", "A577W", "AFRD", "A976A", "A576W", 
-              "AAH A", "A479A", "A480R", "A481S", "A482A", "A483R", "A484R", "AQRB", 
-              "ABG", "ABG G")
+options(expressions=500000)
+spurplanFileName <- "./D2013_46_v02.csv"
+btsfwFileName <- "./BTSFW-2013_46_DW_v02.csv"
+folderName <- "./WEBSERVICE"
+
+
+# bts_list <- c("ABCH", "ABCHG", "ASTT", "A465M", "A464S", "AMUE", "A467M", "A466M", 
+#               "A469S", "A468S", "ASWA", "A471F", "A470S", "A473F", "A472S", "A475F", 
+#               "A474S", "A477W", "A476W", "A977W", "A577W", "AFRD", "A976A", "A576W", 
+#               "AAH A", "A479A", "A480R", "A481S", "A482A", "A483R", "A484R", "AQRB", 
+#               "ABG", "ABG G")
+# fileName <- list.files("./WEBSERVICE", pattern = "*.csv", full.names = T)[2]
+# fName <- list.files("./WEBSERVICE", pattern = "*.csv", full.names = F)[2]
+
+plotAllRoutes <- function(folderName, spurplanFileName, btsfwFileName){
+  spurplanKnoten <- as.data.table(read.csv2(file = spurplanFileName, stringsAsFactors = F))
+  betriebsstellenfahrwege <- as.data.table(read.csv2(file = btsfwFileName, stringsAsFactors = F))
+  files <- list.files(folderName, pattern = "*.csv", full.names = T)
+  fileNames <- list.files(folderName, pattern = "*.csv", full.names = F)
+  for(i in 1:length(files)){
+    print(i)
+    plotWayWebservice(files[i], fileNames[i], spurplanKnoten, betriebsstellenfahrwege)
+  }
+}
+
+plotWayWebservice <-function(file, fileName, spurplanKnoten, betriebsstellenfahrwege){
+  df <- read.csv2(file, stringsAsFactors = F)
+  bts_list <- df$RIL100
+  p <- plotBTS(spurplanKnoten, bts_list)
+  wd <- min(200, 4*length(bts_list))
+  he <- min(30, 7+length(bts_list)*0.1)
+  ggsave(filename = paste0("./WEBSERVICE/PLOTS/", unlist(strsplit(fileName, "\\."))[1], ".jpg"), 
+         plot = p, width = wd, height = he, units = "cm", limitsize = F)
+}
+
 
 plotBTS <- function(spurplanKnoten, bts_list){
   p <- ggplot()
   b_frame <- data.frame(BTS = bts_list, SHIFT_X = 0, SHIFT_Y = 0, stringsAsFactors = F)
-  tmp <- generateTMPshift(spurplanKnoten, b_frame$BTS[1])
-  p <- plotInfra(p, tmp)
+  tmp_list <- list(generateTMPshift(spurplanKnoten, b_frame$BTS[1]))
   for (j in 2:length(b_frame$BTS)){
     tmp_old <- generateTMPshift(spurplanKnoten, b_frame$BTS[j-1], b_frame$SHIFT_X[j-1], b_frame$SHIFT_Y[j-1])
     tmp_new <- generateTMPshift(spurplanKnoten, b_frame$BTS[j], b_frame$SHIFT_X[j], b_frame$SHIFT_Y[j])
@@ -22,9 +49,9 @@ plotBTS <- function(spurplanKnoten, bts_list){
     if(is.null(res)){stop(paste(j, "error in calcShift"))}
     b_frame$SHIFT_X[j] <- res[1]
     b_frame$SHIFT_Y[j] <- res[2]
-    tmp <- generateTMPshift(spurplanKnoten, b_frame$BTS[j], b_frame$SHIFT_X[j], b_frame$SHIFT_Y[j])
-    p <- plotInfra(p, tmp)
+    tmp_list <- c(tmp_list, list(generateTMPshift(spurplanKnoten, b_frame$BTS[j], b_frame$SHIFT_X[j], b_frame$SHIFT_Y[j])))
   }
+  p <- plotInfra(p, tmp_list)
   p
 }
 
@@ -37,7 +64,7 @@ calcShift <- function(tmp_old, tmp_new, x_old, y_old, x_new, y_new){
   
   #find matching Betriebsstellengrenze
   for(i in 1:length(gr_old)){
-    m <- gr_new[NODE_NAME == gr_old$NODE_NAME[i]]
+    m <- gr_new[NODE_NAME == gr_old$NODE_NAME[i] & STRECKE == gr_old$STRECKE[i]]
     if(length(m$CTR) == 1){
       delta_x <- m$X - gr_old$X[i]
       delta_y <- m$Y - gr_old$Y[i]
@@ -78,26 +105,30 @@ plotBTSFW <- function(p, tmp){
 
 plotInfra <- function(p, tmp){
   
-  fzmp <- tmp[TYPE == "Fahrzeitmesspunkt"]
-  fzmp$GR <- 0
-  tmp <- tmp[TYPE != "Fahrzeitmesspunkt"]
-  tmp$GR <- 0
-  tmp$GR[tmp$TYPE == "Betriebsstellengrenze"] <- 1
-  tmp$GR[tmp$TYPE == "Gleisende" | tmp$TYPE == "Prellbock"] <- 2
-  
-  p <- p +
-    annotate("text", x=mean(tmp$X), y=mean(tmp$Y), label=tmp$BTS_NAME[1], size = 10, color="grey") +
-    geom_line(data=tmp, aes(x=X, y=Y, group=SP_AB_ID)) +
-    geom_point(data=tmp, aes(x=X, y=Y, size=2, shape=as.factor(GR))) +
-    theme_minimal() + theme(legend.position="none")
-  if(length(fzmp$CTR) > 0){
-    p <- p + 
-      geom_point(data=fzmp, aes(x=X, y=Y, color = "red", size = 2)) + 
-      geom_text(data=fzmp, aes(x=X, y=Y, label=NODE_NAME)) 
-  }else{
-    fzmp <- tmp[1]
-    p <- p + geom_point(data=fzmp, aes(x=X, y=Y, color = "red", size = 0))
+  for(j in 1:length(tmp_list)){
+    fzmp <- tmp[[j]][TYPE == "Fahrzeitmesspunkt"]
+    fzmp$GR <- 0
+    tmp[[j]] <- tmp[[j]][TYPE != "Fahrzeitmesspunkt"]
+    tmp[[j]]$GR <- 0
+    tmp[[j]]$GR[tmp[[j]]$TYPE == "Betriebsstellengrenze"] <- 1
+    tmp[[j]]$GR[tmp[[j]]$TYPE == "Gleisende" | tmp[[j]]$TYPE == "Prellbock"] <- 2
+    
+    p <- p +
+      annotate("text", x=mean(tmp[[j]]$X), y=mean(tmp[[j]]$Y), label=tmp[[j]]$BTS_NAME[1], size = 3, color="grey") +
+      geom_line(data=tmp[[j]], aes(x=X, y=Y, group=SP_AB_ID)) +
+      geom_point(data=tmp[[j]], aes(x=X, y=Y, shape=as.factor(GR), size = 0)) +
+      theme_minimal() + theme(legend.position="none")
+    if(length(fzmp$CTR) > 0){
+      p <- p + 
+        geom_point(data=fzmp, aes(x=X, y=Y, color = "red", size = 0)) + 
+        geom_text(data=fzmp, aes(x=X, y=Y, label=NODE_NAME)) 
+    }else{
+      fzmp <- tmp[[j]][1]
+      p <- p + geom_point(data=fzmp, aes(x=X, y=Y, color = "red", size = 0))
+    }
   }
+  
+  
   p
 }
 
@@ -130,6 +161,6 @@ abschnitte <- "5046#4997#5058#5073#5087#5078#4994#5056#5066#4996#5075#5029#5061#
 p <- plotBTSFW(ggplot(), generateFWshift(spurplanKnoten, abschnitte))
 bts_list <- c("FFU G", "FFU")
 p <- plotBTS(spurplanKnoten, bts_list)
-plotInfra(p, generateTMPshift(spurplanKnoten, "FFU G"))
+plotInfra(p, generateTMPshift(spurplanKnoten, "FFU"))
 
 plotInfra(ggplot(), generateTMPshift(spurplanKnoten, "FALZ"))
