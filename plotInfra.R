@@ -8,11 +8,11 @@ btsfwFileName <- "./BTSFW-2013_46_DW_v02.csv"
 folderName <- "./WEBSERVICE"
 
 
-# bts_list <- c("ABCH", "ABCHG", "ASTT", "A465M", "A464S", "AMUE", "A467M", "A466M", 
-#               "A469S", "A468S", "ASWA", "A471F", "A470S", "A473F", "A472S", "A475F", 
-#               "A474S", "A477W", "A476W", "A977W", "A577W", "AFRD", "A976A", "A576W", 
-#               "AAH A", "A479A", "A480R", "A481S", "A482A", "A483R", "A484R", "AQRB", 
-#               "ABG", "ABG G")
+bts_list <- c("ABCH", "ABCHG", "ASTT", "A465M", "A464S", "AMUE", "A467M", "A466M",
+              "A469S", "A468S", "ASWA", "A471F", "A470S", "A473F", "A472S", "A475F",
+              "A474S", "A477W", "A476W", "A977W", "A577W", "AFRD", "A976A", "A576W",
+              "AAH A", "A479A", "A480R", "A481S", "A482A", "A483R", "A484R", "AQRB",
+              "ABG", "ABG G")
 # fileName <- list.files("./WEBSERVICE", pattern = "*.csv", full.names = T)[2]
 # fName <- list.files("./WEBSERVICE", pattern = "*.csv", full.names = F)[2]
 
@@ -30,7 +30,17 @@ plotAllRoutes <- function(folderName, spurplanFileName, btsfwFileName){
 plotWayWebservice <-function(file, fileName, spurplanKnoten, betriebsstellenfahrwege){
   df <- read.csv2(file, stringsAsFactors = F)
   bts_list <- df$RIL100
-  p <- plotBTS(spurplanKnoten, bts_list)
+  fw_list <- df$DurchfahrtFahrweg
+  fw_list[1] <- df$AbfahrtFahrweg[1]
+  fw_list[length(fw_list)] <- df$AnkunftFahrweg[length(fw_list)]
+  if(any(fw_list == "")){stop("one fw is empty")}
+  ab_list <- list()
+  for(j in 1:length(fw_list)){
+    ab <- betriebsstellenfahrwege$ABSCHNITTE[which(betriebsstellenfahrwege$FW_NAME == fw_list[j])]
+    if(length(ab) <=0){stop("no btsfw with matching name")}
+    ab_list[[j]] <- ab
+  }
+  p <- plotBTS(spurplanKnoten, bts_list, fw_list)
   wd <- min(200, 4*length(bts_list))
   he <- min(30, 7+length(bts_list)*0.1)
   ggsave(filename = paste0("./WEBSERVICE/PLOTS/", unlist(strsplit(fileName, "\\."))[1], ".jpg"), 
@@ -38,24 +48,25 @@ plotWayWebservice <-function(file, fileName, spurplanKnoten, betriebsstellenfahr
 }
 
 
-plotBTS <- function(spurplanKnoten, bts_list){
+plotBTS <- function(spurplanKnoten, bts_list, fw_list){
   p <- ggplot()
-  b_frame <- data.frame(BTS = bts_list, SHIFT_X = 0, SHIFT_Y = 0, stringsAsFactors = F)
+  b_frame <- data.frame(BTS = bts_list, FW = fw_list , SHIFT_X = 0, SHIFT_Y = 0, stringsAsFactors = F)
   tmp_list <- list(generateTMPshift(spurplanKnoten, b_frame$BTS[1]))
+  
   for (j in 2:length(b_frame$BTS)){
     tmp_old <- generateTMPshift(spurplanKnoten, b_frame$BTS[j-1], b_frame$SHIFT_X[j-1], b_frame$SHIFT_Y[j-1])
-    tmp_new <- generateTMPshift(spurplanKnoten, b_frame$BTS[j], b_frame$SHIFT_X[j], b_frame$SHIFT_Y[j])
-    res <- calcShift(tmp_old, tmp_new, b_frame$SHIFT_X[j-1], b_frame$SHIFT_Y[j-1], b_frame$SHIFT_X[j], b_frame$SHIFT_Y[j])
+    tmp_new <- generateTMPshift(spurplanKnoten, b_frame$BTS[j], 0, 0)
+    res <- calcShift(tmp_old, tmp_new)
     if(is.null(res)){stop(paste(j, "error in calcShift"))}
     b_frame$SHIFT_X[j] <- res[1]
     b_frame$SHIFT_Y[j] <- res[2]
-    tmp_list <- c(tmp_list, list(generateTMPshift(spurplanKnoten, b_frame$BTS[j], b_frame$SHIFT_X[j], b_frame$SHIFT_Y[j])))
+    tmp_list[[j]] <- generateTMPshift(spurplanKnoten, b_frame$BTS[j], b_frame$SHIFT_X[j], b_frame$SHIFT_Y[j])
   }
   p <- plotInfra(p, tmp_list)
   p
 }
 
-calcShift <- function(tmp_old, tmp_new, x_old, y_old, x_new, y_new){
+calcShift <- function(tmp_old, tmp_new){
   bts_old <- tmp_old$BTS_NAME[1]
   bts_new <- tmp_new$BTS_NAME[1]
   gr_old <- tmp_old[TYPE == "Betriebsstellengrenze" & PARTNER == bts_new]
@@ -68,6 +79,26 @@ calcShift <- function(tmp_old, tmp_new, x_old, y_old, x_new, y_new){
     if(length(m$CTR) == 1){
       delta_x <- m$X - gr_old$X[i]
       delta_y <- m$Y - gr_old$Y[i]
+      
+      if(length(tmp_new$CTR) <= 10 || length(tmp_old$CTR) <= 10){
+        return(c(delta_x, delta_y))
+      }
+      
+      # if neighbour bts overlap too much --> shift them horizontally
+      x_max_new <- quantile(tmp_new$X - delta_x, probs = 0.9)
+      x_min_new <- quantile(tmp_new$X - delta_x, probs = 0.1)
+      x_max_old <- quantile(tmp_old$X, probs = 0.9)
+      x_min_old <- quantile(tmp_old$X, probs = 0.1)
+      if((x_max_old >= x_min_new && x_max_old <= x_max_new) ||
+         (x_max_new >= x_min_old && x_max_new <= x_max_old)){
+        print(paste("x_min_old", x_min_old))
+        print(paste("x_max_old", x_max_old))
+        print(paste("x_min_new", x_min_new))
+        print(paste("x_max_new", x_max_new))
+        
+        delta_y <- min(tmp_old$Y) - max(tmp_new$Y)
+      }
+      
       return(c(delta_x, delta_y))
     }
   }
@@ -134,7 +165,7 @@ plotInfra <- function(p, tmp){
 
 p <- plotBTS(spurplanKnoten, bts_list)
 
-ggsave(filename = "./BTSLIST.jpg", plot = p, width = 6*length(bts_list), units = "cm", limitsize = F)
+ggsave(filename = "./tmp.jpg", plot = p, width = 200, height = 100, units = "cm", limitsize = F)
 
 
 abschnitte <- "9#4#12#5#7#3"
