@@ -50,17 +50,36 @@ plotWayWebservice <-function(file, fileName, spurplanKnoten, betriebsstellenfahr
 
 plotBTS <- function(spurplanKnoten, bts_list, fw_list){
   p <- ggplot()
-  b_frame <- data.frame(BTS = bts_list, FW = fw_list , SHIFT_X = 0, SHIFT_Y = 0, stringsAsFactors = F)
+  b_frame <- data.frame(BTS = bts_list, FW = fw_list , SHIFT_X = 0, SHIFT_Y = 0, ROTATE_X = F,stringsAsFactors = F)
   tmp_list <- list(generateTMPshift(spurplanKnoten, b_frame$BTS[1]))
+  st_fw <- betriebsstellenfahrwege[which(betriebsstellenfahrwege$FW_NAME == fw_list[1]),]
+  is_steigend <- (as.numeric(spurplanKnoten$X[spurplanKnoten$NODE_ID == st_fw$END_ID & spurplanKnoten$BTS_NAME == st_fw$BTS_NAME]) - 
+                    as.numeric(spurplanKnoten$X[spurplanKnoten$NODE_ID == st_fw$START_ID & spurplanKnoten$BTS_NAME == st_fw$BTS_NAME])) >= 0
   
   for (j in 2:length(b_frame$BTS)){
-    tmp_old <- generateTMPshift(spurplanKnoten, b_frame$BTS[j-1], b_frame$SHIFT_X[j-1], b_frame$SHIFT_Y[j-1])
+  #for (j in 2:19){
+    tmp_old <- tmp_list[[j-1]]
     tmp_new <- generateTMPshift(spurplanKnoten, b_frame$BTS[j], 0, 0)
     res <- calcShift(tmp_old, tmp_new)
     if(is.null(res)){stop(paste(j, "error in calcShift"))}
     b_frame$SHIFT_X[j] <- res[1]
     b_frame$SHIFT_Y[j] <- res[2]
-    tmp_list[[j]] <- generateTMPshift(spurplanKnoten, b_frame$BTS[j], b_frame$SHIFT_X[j], b_frame$SHIFT_Y[j])
+    tmp_new <- generateTMPshift(spurplanKnoten, b_frame$BTS[j], b_frame$SHIFT_X[j], b_frame$SHIFT_Y[j])
+    if(j < length(b_frame$BTS)){
+      if(((tmp_new$X[tmp_new$PARTNER == b_frame$BTS[j+1]][1] - tmp_new$X[tmp_new$PARTNER == b_frame$BTS[j-1]][1]) >= 0) != is_steigend){
+        # rotate by x
+        fix_x <- tmp_new$X[tmp_new$PARTNER == b_frame$BTS[j-1]][1]
+        distance <- abs(tmp_new$X - fix_x)
+        #print(paste(j, "fix_x", fix_x, "dist", distance))
+        tmp_new$X <- fix_x + (-1 + 2*is_steigend) * distance
+        b_frame$ROTATE_X[j] <- T
+      }
+    }
+    tmp_list[[j]] <- tmp_new
+    #p <- ggplot()
+    #p <- plotInfra(p, tmp_list)
+    #ggsave(filename = paste0("./WEBSERVICE/PLOTS/parts/", sprintf("%04d", j-1), ".jpg"), 
+    #       plot = p, width = 200, height = 30, units = "cm", limitsize = F)
   }
   p <- plotInfra(p, tmp_list)
   p
@@ -79,31 +98,13 @@ calcShift <- function(tmp_old, tmp_new){
     if(length(m$CTR) == 1){
       delta_x <- m$X - gr_old$X[i]
       delta_y <- m$Y - gr_old$Y[i]
-      
-      if(length(tmp_new$CTR) <= 10 || length(tmp_old$CTR) <= 10){
-        return(c(delta_x, delta_y))
-      }
-      
-      # if neighbour bts overlap too much --> shift them horizontally
-      x_max_new <- quantile(tmp_new$X - delta_x, probs = 0.9)
-      x_min_new <- quantile(tmp_new$X - delta_x, probs = 0.1)
-      x_max_old <- quantile(tmp_old$X, probs = 0.9)
-      x_min_old <- quantile(tmp_old$X, probs = 0.1)
-      if((x_max_old >= x_min_new && x_max_old <= x_max_new) ||
-         (x_max_new >= x_min_old && x_max_new <= x_max_old)){
-        print(paste("x_min_old", x_min_old))
-        print(paste("x_max_old", x_max_old))
-        print(paste("x_min_new", x_min_new))
-        print(paste("x_max_new", x_max_new))
-        
-        delta_y <- min(tmp_old$Y) - max(tmp_new$Y)
-      }
-      
       return(c(delta_x, delta_y))
     }
   }
-  #no unique match or no match
-  return()
+  if(length(delta_x) <= 0){
+    #no unique match or no match
+    return()
+  }
 }
 
 generateTMPshift <- function(spurplanKnoten, bts, shift_x = 0, shift_y = 0){
@@ -129,7 +130,7 @@ generateFWshift <- function(spurplanKnoten, abschnitte, shift_x = 0, shift_y = 0
 
 plotBTSFW <- function(p, tmp){
   tmp$GR <- 0
-  p <- p + geom_line(data=tmp, aes(x=X, y=Y, group=SP_AB_ID, colour = "red", size = 2))
+  p <- p + geom_line(data=tmp, aes(x=X, y=Y, group=SP_AB_ID), colour = "red", size = 2)
   
   p
 }
@@ -147,15 +148,15 @@ plotInfra <- function(p, tmp){
     p <- p +
       annotate("text", x=mean(tmp[[j]]$X), y=mean(tmp[[j]]$Y), label=tmp[[j]]$BTS_NAME[1], size = 3, color="grey") +
       geom_line(data=tmp[[j]], aes(x=X, y=Y, group=SP_AB_ID)) +
-      geom_point(data=tmp[[j]], aes(x=X, y=Y, shape=as.factor(GR), size = 0)) +
+      geom_point(data=tmp[[j]], aes(x=X, y=Y, shape=as.factor(GR)), size = 1) +
       theme_minimal() + theme(legend.position="none")
     if(length(fzmp$CTR) > 0){
       p <- p + 
-        geom_point(data=fzmp, aes(x=X, y=Y, color = "red", size = 0)) + 
+        geom_point(data=fzmp, aes(x=X, y=Y), color = "red", size = 2) + 
         geom_text(data=fzmp, aes(x=X, y=Y, label=NODE_NAME)) 
     }else{
       fzmp <- tmp[[j]][1]
-      p <- p + geom_point(data=fzmp, aes(x=X, y=Y, color = "red", size = 0))
+      p <- p + geom_point(data=fzmp, aes(x=X, y=Y), color = "red", size = 0)
     }
   }
   
