@@ -50,14 +50,14 @@ plotWayWebservice <-function(file, fileName, spurplanKnoten, betriebsstellenfahr
 
 plotBTS <- function(spurplanKnoten, bts_list, fw_list){
   p <- ggplot()
-  b_frame <- data.frame(BTS = bts_list, FW = fw_list , SHIFT_X = 0, SHIFT_Y = 0, ROTATE_X = F,stringsAsFactors = F)
+  b_frame <- data.frame(BTS = bts_list, FW = fw_list , SHIFT_X = 0, SHIFT_Y = 0, ROTATE_X = F, ROTATE_Y = F, stringsAsFactors = F)
   tmp_list <- list(generateTMPshift(spurplanKnoten, b_frame$BTS[1]))
   st_fw <- betriebsstellenfahrwege[which(betriebsstellenfahrwege$FW_NAME == fw_list[1]),]
   is_steigend <- (as.numeric(spurplanKnoten$X[spurplanKnoten$NODE_ID == st_fw$END_ID & spurplanKnoten$BTS_NAME == st_fw$BTS_NAME]) - 
                     as.numeric(spurplanKnoten$X[spurplanKnoten$NODE_ID == st_fw$START_ID & spurplanKnoten$BTS_NAME == st_fw$BTS_NAME])) >= 0
   
   for (j in 2:length(b_frame$BTS)){
-  #for (j in 2:19){
+  #for (j in 2:120){
     tmp_old <- tmp_list[[j-1]]
     tmp_new <- generateTMPshift(spurplanKnoten, b_frame$BTS[j], 0, 0)
     res <- calcShift(tmp_old, tmp_new)
@@ -74,6 +74,30 @@ plotBTS <- function(spurplanKnoten, bts_list, fw_list){
         tmp_new$X <- fix_x + (-1 + 2*is_steigend) * distance
         b_frame$ROTATE_X[j] <- T
       }
+      # check rotate y
+      gr_old <- tmp_old[TYPE == "Betriebsstellengrenze" & PARTNER == b_frame$BTS[j]]
+      gr_new <- tmp_new[TYPE == "Betriebsstellengrenze" & PARTNER == b_frame$BTS[j-1]]
+      distance <- numeric(0)
+      for(i in 1:length(gr_old$CTR)){
+        d <- gr_new$Y[gr_new$NODE_NAME == gr_old$NODE_NAME[i] & gr_new$STRECKE == gr_old$STRECKE[i]]
+        if(length(d) == 1){
+          distance <- c(distance, d - gr_old$Y[i])
+        }else{
+          distance <- c(distance, 0)
+        }
+        
+      }
+      if(sum(abs(distance)) > 0.1){
+        fix_y <- gr_old$Y[which.min(abs(distance))]
+        distance <- tmp_new$Y - fix_y
+        tmp_new$Y <- tmp_new$Y - (2*distance)
+        b_frame$ROTATE_Y[j] <- T
+      }
+      res <- calcShift(tmp_old, tmp_new)
+      if(is.null(res)){stop(paste(j, "error in calcShift"))}
+      b_frame$SHIFT_X[j] <- b_frame$SHIFT_X[j] + res[1]
+      b_frame$SHIFT_Y[j] <- b_frame$SHIFT_Y[j] + res[2]
+      tmp_new <- correctTMP(tmp_new, res)
     }
     tmp_list[[j]] <- tmp_new
     #p <- ggplot()
@@ -126,6 +150,12 @@ generateFWshift <- function(spurplanKnoten, abschnitte, shift_x = 0, shift_y = 0
   tmp$Y <- as.numeric(tmp$Y) - shift_y
   
   tmp
+}
+
+correctTMP <- function(tmp_new, res){
+  tmp_new$X <- tmp_new$X - res[1]
+  tmp_new$Y <- tmp_new$Y - res[2]
+  tmp_new
 }
 
 plotBTSFW <- function(p, tmp){
