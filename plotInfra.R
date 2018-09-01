@@ -3,23 +3,22 @@ library(data.table)
 library(ggplot2)
 
 options(expressions=500000)
-spurplanFileName <- "./D2013_46_v02.csv"
-btsfwFileName <- "./BTSFW-2013_46_DW_v02.csv"
 folderName <- "./WEBSERVICE"
 
 
-bts_list <- c("ABCH", "ABCHG", "ASTT", "A465M", "A464S", "AMUE", "A467M", "A466M",
-              "A469S", "A468S", "ASWA", "A471F", "A470S", "A473F", "A472S", "A475F",
-              "A474S", "A477W", "A476W", "A977W", "A577W", "AFRD", "A976A", "A576W",
-              "AAH A", "A479A", "A480R", "A481S", "A482A", "A483R", "A484R", "AQRB",
-              "ABG", "ABG G")
+spurplanKnoten <- as.data.table(read.csv2(file = "./D2013_M15_46_v01.csv", stringsAsFactors = F))
+betriebsstellenfahrwege <- as.data.table(read.csv2(file = "./BTSFW-M15-2013_46_DW_v01.csv", stringsAsFactors = F))
+
+
+# bts_list <- c("ABCH", "ABCHG", "ASTT", "A465M", "A464S", "AMUE", "A467M", "A466M",
+#               "A469S", "A468S", "ASWA", "A471F", "A470S", "A473F", "A472S", "A475F",
+#               "A474S", "A477W", "A476W", "A977W", "A577W", "AFRD", "A976A", "A576W",
+#               "AAH A", "A479A", "A480R", "A481S", "A482A", "A483R", "A484R", "AQRB",
+#               "ABG", "ABG G")
 # fileName <- list.files("./WEBSERVICE", pattern = "*.csv", full.names = T)[2]
 # fName <- list.files("./WEBSERVICE", pattern = "*.csv", full.names = F)[2]
 
-plotAllRoutes <- function(folderName, spurplanFileName, btsfwFileName){
-  spurplanKnoten <- as.data.table(read.csv2(file = spurplanFileName, stringsAsFactors = F))
-  betriebsstellenfahrwege <- as.data.table(read.csv2(file = btsfwFileName, stringsAsFactors = F))
-  #Sys.sleep(10)
+plotAllRoutes <- function(folderName, spurplanKnoten, betriebsstellenfahrwege){
   files <- list.files(folderName, pattern = "*.csv", full.names = T)
   fileNames <- list.files(folderName, pattern = "*.csv", full.names = F)
   for(i in 1:length(files)){
@@ -228,40 +227,40 @@ plotInfra <- function(p, tmp){
   p
 }
 
-p <- plotBTS(spurplanKnoten, bts_list)
-
-ggsave(filename = "./tmp.jpg", plot = p, width = 200, height = 100, units = "cm", limitsize = F)
-
-
-abschnitte <- "9#4#12#5#7#3"
-p <- plotBTSFW(ggplot(), generateFWshift(spurplanKnoten, abschnitte))
-plotInfra(p, generateTMPshift(spurplanKnoten, "ELSP"))
-
-abschnitte <- "7819#7818"
-p <- plotBTSFW(ggplot(), generateFWshift(spurplanKnoten, abschnitte))
-plotInfra(p, generateTMPshift(spurplanKnoten, "FKRO"))
-
-abschnitte <- "15966#15970#16009#15888#15895#15968#15906#15917#15910#15884#15918"
-p <- plotBTSFW(ggplot(), generateFWshift(spurplanKnoten, abschnitte))
-plotInfra(p, generateTMPshift(spurplanKnoten, "AA"))
-
-abschnitte <- "#15932#15952#15918"
-p <- plotBTSFW(ggplot(), generateFWshift(spurplanKnoten, abschnitte))
-plotInfra(p, generateTMPshift(spurplanKnoten, "AA"))
-
-abschnitte <- "1594#1573#1515#1555#1568#1558#1625#1620#1485#1519#1532#1531"
-p <- plotBTSFW(ggplot(), generateFWshift(spurplanKnoten, abschnitte))
-plotInfra(p, generateTMPshift(spurplanKnoten, "FB"))
-
-abschnitte <- "5046#4997#5058#5073#5087#5078#4994#5056#5066#4996#5075#5029#5061#5002"
-p <- plotBTSFW(ggplot(), generateFWshift(spurplanKnoten, abschnitte))
-bts_list <- c("FFU G", "FFU")
-p <- plotBTS(spurplanKnoten, bts_list)
-plotInfra(p, generateTMPshift(spurplanKnoten, "FFU"))
-
-abschnitte <- list("71095#71098#71106#71107#71104#71103#71096#71097#71101#71111")
-tmp_list <- list(generateTMPshift(spurplanKnoten, "LHL"))
-p <- plotBTSFW(ggplot(), generateFWshift(tmp_list, abschnitte))
-plotInfra(p, tmp_list)
-
-plotInfra(ggplot(), generateTMPshift(spurplanKnoten, "FALZ"))
+# p <- plotBTS(spurplanKnoten, bts_list)
+# 
+# ggsave(filename = "./tmp.jpg", plot = p, width = 200, height = 100, units = "cm", limitsize = F)
+# 
+# 
+# abschnitte <- "9#4#12#5#7#3"
+# p <- plotBTSFW(ggplot(), generateFWshift(spurplanKnoten, abschnitte))
+# plotInfra(p, generateTMPshift(spurplanKnoten, "ELSP"))
+# 
+# abschnitte <- "7819#7818"
+# p <- plotBTSFW(ggplot(), generateFWshift(spurplanKnoten, abschnitte))
+# plotInfra(p, generateTMPshift(spurplanKnoten, "FKRO"))
+# 
+# abschnitte <- "15966#15970#16009#15888#15895#15968#15906#15917#15910#15884#15918"
+# p <- plotBTSFW(ggplot(), generateFWshift(spurplanKnoten, abschnitte))
+# plotInfra(p, generateTMPshift(spurplanKnoten, "AA"))
+# 
+# abschnitte <- "#15932#15952#15918"
+# p <- plotBTSFW(ggplot(), generateFWshift(spurplanKnoten, abschnitte))
+# plotInfra(p, generateTMPshift(spurplanKnoten, "AA"))
+# 
+# abschnitte <- "1594#1573#1515#1555#1568#1558#1625#1620#1485#1519#1532#1531"
+# p <- plotBTSFW(ggplot(), generateFWshift(spurplanKnoten, abschnitte))
+# plotInfra(p, generateTMPshift(spurplanKnoten, "FB"))
+# 
+# abschnitte <- "5046#4997#5058#5073#5087#5078#4994#5056#5066#4996#5075#5029#5061#5002"
+# p <- plotBTSFW(ggplot(), generateFWshift(spurplanKnoten, abschnitte))
+# bts_list <- c("FFU G", "FFU")
+# p <- plotBTS(spurplanKnoten, bts_list)
+# plotInfra(p, generateTMPshift(spurplanKnoten, "FFU"))
+# 
+# abschnitte <- list("71095#71098#71106#71107#71104#71103#71096#71097#71101#71111")
+# tmp_list <- list(generateTMPshift(spurplanKnoten, "LHL"))
+# p <- plotBTSFW(ggplot(), generateFWshift(tmp_list, abschnitte))
+# plotInfra(p, tmp_list)
+# 
+# plotInfra(ggplot(), generateTMPshift(spurplanKnoten, "FALZ"))
