@@ -2,13 +2,12 @@ setwd("./Dokumente/ISSplott.r/")
 library(XML)
 library(data.table)
 
-folders <- list.files("./INFRA", full.names = T)
+files <- list.files(path = "./INFRA2", full.names = T, pattern = 'Spurplan.*\\.xml')
 
 counter <- 0
 betriebsstellenfahrwege <- data.table()
 
-for(i in 1:length(folders)){
-  files <- list.files(path = folders[i], full.names = T, pattern = 'Spurplan.*\\.xml')
+
   for(j in 1:length(files)){
     print(files[j])
     spurplan <- readLines(files[j], encoding = "latin1")
@@ -57,14 +56,14 @@ for(i in 1:length(folders)){
       }
     }
   }
-}
+
 
 redVerlauf <- c("Weichenstamm", "WeichenabzweigLinks", "WeichenabzweigRechts", "KreuzungsweicheAnfangLinks", 
                 "KreuzungsweicheEndeLinks")
 
 
 
-for(b in 6800:length(betriebsstellenfahrwege$ID)){
+for(b in 1:length(betriebsstellenfahrwege$ID)){
   print(b)
   tmp_fw <- betriebsstellenfahrwege[b,]
   v <- unlist(strsplit(tmp_fw$VERLAUF, "#"))
@@ -250,4 +249,4 @@ for(b in 6800:length(betriebsstellenfahrwege$ID)){
 
 
 
-write.csv2(betriebsstellenfahrwege, file = "./BTSFW-2013_46_DW_v02.csv", row.names = F)
+write.csv2(betriebsstellenfahrwege, file = "./BTSFW-M15-2013_46_DW_v01.csv", row.names = F)

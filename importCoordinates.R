@@ -2,14 +2,14 @@ setwd("./Dokumente/ISSplott.r/")
 library(XML)
 library(data.table)
 
-folders <- list.files("./INFRA", full.names = T)
+folders <- list.files("./INFRA2", full.names = T)
 
 counter <- 0
 ctr_node <- 0
 spurplanKnoten <- data.table()
+i <- 1
 
-for(i in 1:length(folders)){
-  files <- list.files(path = folders[i], full.names = T, pattern = 'Spurplan.*\\.xml')
+files <- list.files(path = "./INFRA2", full.names = T, pattern = 'Spurplan.*\\.xml')
   for(j in 1:length(files)){
     print(files[j])
     spurplan <- readLines(files[j], encoding = "latin1")
@@ -174,7 +174,6 @@ for(i in 1:length(folders)){
       }
     }
   }
-}
 
 #calculate x/y for FZMP and Kreuzungen, Kreuzungsweichen
 for(i in 1:length(spurplanKnoten$CTR)){
@@ -199,4 +198,4 @@ for(ab in spurplanabschnitte){
   spurplanKnoten$Y[spurplanKnoten$CTR == fzmp_ctr] <- mean(c(as.numeric(tmp$Y[tmp$CTR == before]), as.numeric(tmp$Y[tmp$CTR == after])))
 }
 
-write.csv2(spurplanKnoten, file = "./D2013_46_v02.csv", row.names = F)
+write.csv2(spurplanKnoten, file = "./D2013_M15_46_v01.csv", row.names = F)
