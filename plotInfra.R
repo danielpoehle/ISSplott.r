@@ -33,16 +33,18 @@ plotWayWebservice <-function(file, fileName, spurplanKnoten, betriebsstellenfahr
   fw_list <- df$DurchfahrtFahrweg
   fw_list[which(fw_list == "")] <- df$AbfahrtFahrweg[which(fw_list == "")]
   fw_list[which(fw_list == "")] <- df$AnkunftFahrweg[which(fw_list == "")]
-  if(any(fw_list == "")){stop("one fw is empty")}
+  if(any(fw_list == "")){stop(paste(j, "one fw is empty"))}
   ab_list <- list()
   for(j in 1:length(fw_list)){
-    ab <- betriebsstellenfahrwege$ABSCHNITTE[which(betriebsstellenfahrwege$FW_NAME == fw_list[j] & 
-                                                   betriebsstellenfahrwege$BTS_NAME == bts_list[j])]
+    fw <- betriebsstellenfahrwege[which(betriebsstellenfahrwege$FW_NAME == fw_list[j] & 
+                                                     betriebsstellenfahrwege$BTS_NAME == bts_list[j]),]
+    ab <- fw$ABSCHNITTE
     if(length(ab) <=0){
       print(paste(j, "no btsfw with matching name:", bts_list[j], fw_list[j]))
-      ab_list[[j]] <- list("")
+      ab_list[[j]]$ab <- list("")
     }else{
-      ab_list[[j]] <- ab
+      tmp_ab <- list(ab = ab, color = getColorsForBTSFW(fw$PRIO))
+      ab_list[[j]] <- tmp_ab
       }
   }
   p <- plotBTS(spurplanKnoten, bts_list, fw_list, ab_list)
@@ -50,6 +52,22 @@ plotWayWebservice <-function(file, fileName, spurplanKnoten, betriebsstellenfahr
   he <- min(30, 7+length(bts_list)*0.1)
   ggsave(filename = paste0("./WEBSERVICE/PLOTS/", unlist(strsplit(fileName, "\\."))[1], ".pdf"), 
          plot = p, width = wd, height = he, units = "cm", limitsize = F)
+}
+
+getColorsForBTSFW <- function(prio){
+  if(prio >80){
+    return("red3")
+  }else if(prio > 60){
+    return("royalblue3")
+  }else if(prio > 40){
+    return("springgreen4")
+  }else if(prio > 20){
+    return("darkmagenta")
+  }else if(prio > 0){
+    return("lightcyan3")
+  }else{
+    return("black")
+  }
 }
 
 
@@ -167,11 +185,11 @@ generateTMPshift <- function(spurplanKnoten, bts, shift_x = 0, shift_y = 0){
 generateFWshift <- function(tmp_list, ab_list){
   tmp_fw <- list()
   for(j in 1:length(ab_list)){
-    if(ab_list[[j]] == ""){
+    if(ab_list[[j]]$ab == ""){
       tmp_fw[[j]] <- NULL
       next()
       }
-    ab <- unlist(strsplit(ab_list[[j]], "#"))
+    ab <- unlist(strsplit(ab_list[[j]]$ab, "#"))
     tmp <- tmp_list[[j]][SP_AB_ID %in% ab,]
     tmp <- tmp[X != "" & TYPE != "Fahrzeitmesspunkt"]
     if(length(tmp$CTR) <= 0){
@@ -179,6 +197,7 @@ generateFWshift <- function(tmp_list, ab_list){
       next()
       }
     tmp_fw[[j]] <- tmp
+    tmp_fw[[j]]$color <- ab_list[[j]]$color
   }
   tmp_fw
 }
@@ -193,7 +212,7 @@ plotBTSFW <- function(p, tmp){
   for(j in 1:length(tmp)){
     if(is.null(tmp[[j]])){next()}
     tmp[[j]]$GR <- 0
-    p <- p + geom_line(data=tmp[[j]], aes(x=X, y=Y, group=SP_AB_ID), colour = "royalblue", size = 3)
+    p <- p + geom_line(data=tmp[[j]], aes(x=X, y=Y, group=SP_AB_ID), colour = tmp[[j]]$color, size = 3)
   }
   p
 }
