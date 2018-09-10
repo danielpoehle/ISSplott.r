@@ -1,13 +1,13 @@
-setwd("./Dokumente/ISSplott.r/")
+#setwd("./Dokumente/ISSplott.r/")
 library(data.table)
 library(ggplot2)
 
 options(expressions=500000)
-folderName <- "./WEBSERVICE"
 
 
-spurplanKnoten <- as.data.table(read.csv2(file = "./D2013_M15_46_v01.csv", stringsAsFactors = F))
-betriebsstellenfahrwege <- as.data.table(read.csv2(file = "./BTSFW-M15-2013_46_DW_v01.csv", stringsAsFactors = F))
+
+spurplanKnoten <- as.data.table(read.csv2(file = spkFile, stringsAsFactors = F))
+betriebsstellenfahrwege <- as.data.table(read.csv2(file = btsfwFile, stringsAsFactors = F))
 
 
 # bts_list <- c("ABCH", "ABCHG", "ASTT", "A465M", "A464S", "AMUE", "A467M", "A466M",
@@ -18,16 +18,16 @@ betriebsstellenfahrwege <- as.data.table(read.csv2(file = "./BTSFW-M15-2013_46_D
 # fileName <- list.files("./WEBSERVICE", pattern = "*.csv", full.names = T)[2]
 # fName <- list.files("./WEBSERVICE", pattern = "*.csv", full.names = F)[2]
 
-plotAllRoutes <- function(folderName, spurplanKnoten, betriebsstellenfahrwege){
+plotAllRoutes <- function(folderName, targetFolder){
   files <- list.files(folderName, pattern = "*.csv", full.names = T)
   fileNames <- list.files(folderName, pattern = "*.csv", full.names = F)
   for(i in 1:length(files)){
     print(fileNames[i])
-    plotWayWebservice(files[i], fileNames[i], spurplanKnoten, betriebsstellenfahrwege)
+    plotWayWebservice(files[i], fileNames[i], spurplanKnoten, betriebsstellenfahrwege, targetFolder)
   }
 }
 
-plotWayWebservice <-function(file, fileName, spurplanKnoten, betriebsstellenfahrwege){
+plotWayWebservice <-function(file, fileName, spurplanKnoten, betriebsstellenfahrwege, targetFolder){
   df <- read.csv2(file, stringsAsFactors = F)
   bts_list <- df$RIL100
   fw_list <- df$DurchfahrtFahrweg
@@ -36,7 +36,7 @@ plotWayWebservice <-function(file, fileName, spurplanKnoten, betriebsstellenfahr
   if(any(fw_list == "")){stop(paste(j, "one fw is empty"))}
   ab_list <- list()
   for(j in 1:length(fw_list)){
-    fw <- betriebsstellenfahrwege[which(betriebsstellenfahrwege$FW_NAME == fw_list[j] & 
+    fw <- betriebsstellenfahrwege[which(betriebsstellenfahrwege$FW_NAME == fw_list[j] &
                                                      betriebsstellenfahrwege$BTS_NAME == bts_list[j]),]
     ab <- fw$ABSCHNITTE
     if(length(ab) <=0){
@@ -48,7 +48,7 @@ plotWayWebservice <-function(file, fileName, spurplanKnoten, betriebsstellenfahr
       }
   }
   anz <- ceiling(length(bts_list)/150.0)
-  
+
   for(k in 1:anz){
     range <- (1+(k-1)*150):(150+(k-1)*150)
     if(k == anz){
@@ -57,15 +57,15 @@ plotWayWebservice <-function(file, fileName, spurplanKnoten, betriebsstellenfahr
     prt_bts_list <- bts_list[range]
     prt_fw_list <- fw_list[range]
     prt_ab_list <- ab_list[range]
-    
+
     p <- plotBTS(spurplanKnoten, prt_bts_list, prt_fw_list, prt_ab_list)
     wd <- min(600, 6*length(prt_bts_list))
     he <- min(30, 7+length(prt_bts_list)*0.1)
-    ggsave(filename = paste0("./WEBSERVICE/PLOTS/", unlist(strsplit(fileName, "\\."))[1], "_", sprintf("%03d", k), ".pdf"), 
+    ggsave(filename = paste0(targetFolder, unlist(strsplit(fileName, "\\."))[1], "_", sprintf("%03d", k), ".pdf"),
            plot = p, width = wd, height = he, units = "cm", limitsize = F)
   }
-  
-  
+
+
 }
 
 getColorsForBTSFW <- function(prio){
@@ -88,14 +88,14 @@ getColorsForBTSFW <- function(prio){
 plotBTS <- function(spurplanKnoten, bts_list, fw_list, ab_list){
   b_frame <- data.frame(BTS = bts_list, FW = fw_list , SHIFT_X = 0, SHIFT_Y = 0, ROTATE_X = F, ROTATE_Y = F, stringsAsFactors = F)
   tmp_list <- list(generateTMPshift(spurplanKnoten, b_frame$BTS[1]))
-  
+
   st_fw <- betriebsstellenfahrwege[which(betriebsstellenfahrwege$FW_NAME == fw_list[1] & betriebsstellenfahrwege$BTS_NAME == bts_list[1]),]
-  is_steigend <- (as.numeric(spurplanKnoten$X[spurplanKnoten$NODE_ID == st_fw$END_ID & spurplanKnoten$BTS_NAME == st_fw$BTS_NAME]) - 
+  is_steigend <- (as.numeric(spurplanKnoten$X[spurplanKnoten$NODE_ID == st_fw$END_ID & spurplanKnoten$BTS_NAME == st_fw$BTS_NAME]) -
                     as.numeric(spurplanKnoten$X[spurplanKnoten$NODE_ID == st_fw$START_ID & spurplanKnoten$BTS_NAME == st_fw$BTS_NAME])) >= 0
   tmp_list[[1]]$Y <- -tmp_list[[1]]$Y
-  
+
   kopfmachen_last <- F
-  
+
   for (j in 2:length(b_frame$BTS)){
   #for (j in 2:11){
     tmp_old <- tmp_list[[j-1]]
@@ -139,7 +139,7 @@ plotBTS <- function(spurplanKnoten, bts_list, fw_list, ab_list){
       }else{
         distance <- c(distance, 0)
       }
-      
+
     }
     if(sum(abs(distance)) > 0.1){
       fix_y <- gr_old$Y[which.min(abs(distance))]
@@ -152,13 +152,13 @@ plotBTS <- function(spurplanKnoten, bts_list, fw_list, ab_list){
     b_frame$SHIFT_X[j] <- b_frame$SHIFT_X[j] + res[1]
     b_frame$SHIFT_Y[j] <- b_frame$SHIFT_Y[j] + res[2]
     tmp_new <- correctTMP(tmp_new, res)
-    
+
     tmp_list[[j]] <- tmp_new
     #tmp_fw <- generateFWshift(tmp_list, ab_list[1:length(tmp_list)])
     #p <- ggplot()
     #p <- plotBTSFW(p, tmp_fw)
     #p <- plotInfra(p, tmp_list)
-    #ggsave(filename = paste0("./WEBSERVICE/PLOTS/parts/", sprintf("%04d", j-1), ".jpg"), 
+    #ggsave(filename = paste0("./WEBSERVICE/PLOTS/parts/", sprintf("%04d", j-1), ".jpg"),
     #       plot = p, width = 200, height = 30, units = "cm", limitsize = F)
     if(kopfmachen_last){
       is_steigend <- !is_steigend
@@ -176,7 +176,7 @@ calcShift <- function(tmp_old, tmp_new){
   gr_old <- tmp_old[TYPE == "Betriebsstellengrenze" & PARTNER == bts_new]
   gr_new <- tmp_new[TYPE == "Betriebsstellengrenze" & PARTNER == bts_old]
   if(length(gr_old) <=0 || length(gr_new) <=0){return()}
-  
+
   #find matching Betriebsstellengrenze
   for(i in 1:length(gr_old)){
     m <- gr_new[NODE_NAME == gr_old$NODE_NAME[i] & STRECKE == gr_old$STRECKE[i]]
@@ -198,7 +198,7 @@ generateTMPshift <- function(spurplanKnoten, bts, shift_x = 0, shift_y = 0){
   if(length(tmp$CTR) <= 0){return()}
   tmp$X <- as.numeric(tmp$X) - shift_x
   tmp$Y <- as.numeric(tmp$Y) - shift_y
-  
+
   tmp
 }
 
@@ -238,7 +238,7 @@ plotBTSFW <- function(p, tmp){
 }
 
 plotInfra <- function(p, tmp){
-  
+
   for(j in 1:length(tmp)){
     fzmp <- tmp[[j]][TYPE == "Fahrzeitmesspunkt"]
     fzmp$GR <- 0
@@ -246,60 +246,60 @@ plotInfra <- function(p, tmp){
     tmp[[j]]$GR <- 0
     tmp[[j]]$GR[tmp[[j]]$TYPE == "Betriebsstellengrenze"] <- 1
     tmp[[j]]$GR[tmp[[j]]$TYPE == "Gleisende" | tmp[[j]]$TYPE == "Prellbock"] <- 2
-    
+
     p <- p +
       annotate("text", x=mean(tmp[[j]]$X), y=mean(tmp[[j]]$Y), label=tmp[[j]]$BTS_NAME[1], size = 3, color="grey") +
       geom_line(data=tmp[[j]], aes(x=X, y=Y, group=SP_AB_ID)) +
       geom_point(data=tmp[[j]], aes(x=X, y=Y, shape=as.factor(GR)), size = 1) +
       theme_minimal() + theme(legend.position="none")
     if(length(fzmp$CTR) > 0){
-      p <- p + 
-        geom_point(data=fzmp, aes(x=X, y=Y), color = "red", size = 2) + 
-        geom_text(data=fzmp, aes(x=X, y=Y, label=NODE_NAME)) 
+      p <- p +
+        geom_point(data=fzmp, aes(x=X, y=Y), color = "red", size = 2) +
+        geom_text(data=fzmp, aes(x=X, y=Y, label=NODE_NAME))
     }else{
       fzmp <- tmp[[j]][1]
       p <- p + geom_point(data=fzmp, aes(x=X, y=Y), color = "red", size = 0)
     }
   }
-  
-  
+
+
   p
 }
 
 # p <- plotBTS(spurplanKnoten, bts_list)
-# 
+#
 # ggsave(filename = "./tmp.jpg", plot = p, width = 200, height = 100, units = "cm", limitsize = F)
-# 
-# 
+#
+#
 # abschnitte <- "9#4#12#5#7#3"
 # p <- plotBTSFW(ggplot(), generateFWshift(spurplanKnoten, abschnitte))
 # plotInfra(p, generateTMPshift(spurplanKnoten, "ELSP"))
-# 
+#
 # abschnitte <- "7819#7818"
 # p <- plotBTSFW(ggplot(), generateFWshift(spurplanKnoten, abschnitte))
 # plotInfra(p, generateTMPshift(spurplanKnoten, "FKRO"))
-# 
+#
 # abschnitte <- "15966#15970#16009#15888#15895#15968#15906#15917#15910#15884#15918"
 # p <- plotBTSFW(ggplot(), generateFWshift(spurplanKnoten, abschnitte))
 # plotInfra(p, generateTMPshift(spurplanKnoten, "AA"))
-# 
+#
 # abschnitte <- "#15932#15952#15918"
 # p <- plotBTSFW(ggplot(), generateFWshift(spurplanKnoten, abschnitte))
 # plotInfra(p, generateTMPshift(spurplanKnoten, "AA"))
-# 
+#
 # abschnitte <- "1594#1573#1515#1555#1568#1558#1625#1620#1485#1519#1532#1531"
 # p <- plotBTSFW(ggplot(), generateFWshift(spurplanKnoten, abschnitte))
 # plotInfra(p, generateTMPshift(spurplanKnoten, "FB"))
-# 
+#
 # abschnitte <- "5046#4997#5058#5073#5087#5078#4994#5056#5066#4996#5075#5029#5061#5002"
 # p <- plotBTSFW(ggplot(), generateFWshift(spurplanKnoten, abschnitte))
 # bts_list <- c("FFU G", "FFU")
 # p <- plotBTS(spurplanKnoten, bts_list)
 # plotInfra(p, generateTMPshift(spurplanKnoten, "FFU"))
-# 
+#
 # abschnitte <- list("71095#71098#71106#71107#71104#71103#71096#71097#71101#71111")
 # tmp_list <- list(generateTMPshift(spurplanKnoten, "LHL"))
 # p <- plotBTSFW(ggplot(), generateFWshift(tmp_list, abschnitte))
 # plotInfra(p, tmp_list)
-# 
+#
 # plotInfra(ggplot(), generateTMPshift(spurplanKnoten, "FALZ"))
