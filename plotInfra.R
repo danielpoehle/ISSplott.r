@@ -90,8 +90,12 @@ plotBTS <- function(spurplanKnoten, bts_list, fw_list, ab_list){
   tmp_list <- list(generateTMPshift(spurplanKnoten, b_frame$BTS[1]))
 
   st_fw <- betriebsstellenfahrwege[which(betriebsstellenfahrwege$FW_NAME == fw_list[1] & betriebsstellenfahrwege$BTS_NAME == bts_list[1]),]
-  is_steigend <- (as.numeric(spurplanKnoten$X[spurplanKnoten$NODE_ID == st_fw$END_ID & spurplanKnoten$BTS_NAME == st_fw$BTS_NAME]) -
-                    as.numeric(spurplanKnoten$X[spurplanKnoten$NODE_ID == st_fw$START_ID & spurplanKnoten$BTS_NAME == st_fw$BTS_NAME])) >= 0
+  node_end <- spurplanKnoten[spurplanKnoten$NODE_ID == st_fw$END_ID & spurplanKnoten$BTS_NAME == st_fw$BTS_NAME,]
+  node_start <- spurplanKnoten[spurplanKnoten$NODE_ID == st_fw$START_ID & spurplanKnoten$BTS_NAME == st_fw$BTS_NAME,]
+  if(node_start$X == ""){
+    node_start <- spurplanKnoten[spurplanKnoten$SP_AB_ID == node_start$SP_AB_ID & spurplanKnoten$TYPE == "Fahrzeitmesspunkt",]
+  }
+  is_steigend <- (as.numeric(node_end$X) - as.numeric(node_start$X)) >= 0
   tmp_list[[1]]$Y <- -tmp_list[[1]]$Y
 
   kopfmachen_last <- F
