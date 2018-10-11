@@ -80,15 +80,16 @@ files <- list.files(path = "./INFRA2", full.names = T, pattern = 'Spurplan.*\\.x
               partner <- xmlGetAttr(knoten[[m]][["Partnerknoten"]], "ID")
               node_name <- ""
             }
-            
+            len <- ""
             spurplanKnoten <- rbind(spurplanKnoten, data.table(CTR = node_ctr, NODE_ID = node_id, SP_AB_ID = sp_ab_id,
                                                                BTS_NAME = bts_name, STRECKE = strecke,
                                                                TYPE = type, NODE_NAME = node_name, PARTNER = partner, 
-                                                               COORD_PAR = coordParent, X = x, Y = y))
+                                                               COORD_PAR = coordParent, X = x, Y = y, LENGTH = len))
           }else{
             x <- ""
             y <- ""
             addToFrame <- F
+            len <- ""
             if(type == "Fahrzeitmesspunkt" || type == "HalteplatzRzLinksF" || type == "HalteplatzRzLinksS" ||
                type == "HalteplatzRzRechtsF" || type == "HalteplatzRzRechtsS" || type == "HalteplatzGzF" || 
                type == "HalteplatzGzS" || type == "HalteplatzRzRechtsLinksS" || type == "HalteplatzRzRechtsLinksF"){
@@ -98,6 +99,9 @@ files <- list.files(path = "./INFRA2", full.names = T, pattern = 'Spurplan.*\\.x
               partner <- ""
               coordParent <- ""
               addToFrame <- T
+              if(type != "Fahrzeitmesspunkt"){
+                len <- xmlValue(knoten[[m]][["Laenge"]])
+              }
             }
             if(type == "WeichenabzweigLinks" || type == "WeichenabzweigRechts" || type == "Weichenstamm"){
               partner <- xmlGetAttr(knoten[[m]][["Partner"]], "ID")
@@ -167,7 +171,7 @@ files <- list.files(path = "./INFRA2", full.names = T, pattern = 'Spurplan.*\\.x
               spurplanKnoten <- rbind(spurplanKnoten, data.table(CTR = node_ctr, NODE_ID = node_id, SP_AB_ID = sp_ab_id,
                                                                  BTS_NAME = bts_name, STRECKE = strecke,
                                                                  TYPE = type, NODE_NAME = node_name, PARTNER = partner, 
-                                                                 COORD_PAR = coordParent, X = x, Y = y))
+                                                                 COORD_PAR = coordParent, X = x, Y = y, LENGTH = len))
             }
           }
         }
@@ -198,4 +202,4 @@ for(ab in spurplanabschnitte){
   spurplanKnoten$Y[spurplanKnoten$CTR == fzmp_ctr] <- mean(c(as.numeric(tmp$Y[tmp$CTR == before]), as.numeric(tmp$Y[tmp$CTR == after])))
 }
 
-write.csv2(spurplanKnoten, file = "./D2013_M15_46_v01.csv", row.names = F)
+write.csv2(spurplanKnoten, file = "./D2013_M15_46_v02.csv", row.names = F)
