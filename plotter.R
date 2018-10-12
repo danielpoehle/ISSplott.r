@@ -20,7 +20,7 @@ folderName <- paste0(mainFolder, "WEBSERVICE")
 targetFolder <- paste0(mainFolder, "WEBSERVICE/PLOTS/")
 
 # files with input data for spurplanknoten and betriebsstellenfahrwege
-spkFile <- paste0(mainFolder, "D2013_M15_46_v01.csv")
+spkFile <- paste0(mainFolder, "D2013_M15_46_v02.csv")
 btsfwFile <- paste0(mainFolder, "BTSFW-M15-2013_46_DW_v01.csv")
 
 # import plotter file
