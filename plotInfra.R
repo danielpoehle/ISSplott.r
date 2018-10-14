@@ -99,76 +99,78 @@ plotBTS <- function(spurplanKnoten, bts_list, fw_list, ab_list){
   tmp_list[[1]]$Y <- -tmp_list[[1]]$Y
 
   kopfmachen_last <- F
-
-  for (j in 2:length(b_frame$BTS)){
-  #for (j in 2:11){
-    tmp_old <- tmp_list[[j-1]]
-    tmp_new <- generateTMPshift(spurplanKnoten, b_frame$BTS[j], 0, 0)
-    res <- calcShift(tmp_old, tmp_new)
-    if(is.null(res)){stop(paste(j, "error in calcShift"))}
-    b_frame$SHIFT_X[j] <- res[1]
-    b_frame$SHIFT_Y[j] <- res[2]
-    tmp_new <- generateTMPshift(spurplanKnoten, b_frame$BTS[j], b_frame$SHIFT_X[j], b_frame$SHIFT_Y[j])
-    gr_start <- tmp_new[TYPE == "Betriebsstellengrenze" & PARTNER == b_frame$BTS[j-1]]
-    if(j < length(b_frame$BTS)){
-      gr_end <- tmp_new[TYPE == "Betriebsstellengrenze" & PARTNER == b_frame$BTS[j+1]]
-    }else{
-      gr_end <- tmp_new[TYPE == "Fahrzeitmesspunkt"]
-      if(length(gr_end$CTR) < 1){
-        #last BTS with no FZMP :-/
-        gr_end <- tmp_new[TYPE == "Betriebsstellengrenze" & PARTNER != gr_start$PARTNER[1],]
-      }
-    }
-    if(gr_start$PARTNER[1] == gr_end$PARTNER[1]){
-      # kopfmachen in j
-      gr_end <- tmp_new[TYPE == "Fahrzeitmesspunkt"]
-      kopfmachen_last <- T
-    }
-    if(((gr_end$X[1] - gr_start$X[1] ) >= 0) != is_steigend){
-      # rotate by x
-      fix_x <- tmp_new$X[tmp_new$PARTNER == b_frame$BTS[j-1]][1]
-      distance <- abs(tmp_new$X - fix_x)
-      #print(paste(j, "fix_x", fix_x, "dist", distance))
-      tmp_new$X <- fix_x + (-1 + 2*is_steigend) * distance
-      b_frame$ROTATE_X[j] <- T
-    }
-    # check rotate y
-    gr_old <- tmp_old[TYPE == "Betriebsstellengrenze" & PARTNER == b_frame$BTS[j]]
-    gr_new <- tmp_new[TYPE == "Betriebsstellengrenze" & PARTNER == b_frame$BTS[j-1]]
-    distance <- numeric(0)
-    for(i in 1:length(gr_old$CTR)){
-      d <- gr_new$Y[gr_new$NODE_NAME == gr_old$NODE_NAME[i] & gr_new$STRECKE == gr_old$STRECKE[i]]
-      if(length(d) == 1){
-        distance <- c(distance, d - gr_old$Y[i])
+  if(length(b_frame$BTS) > 1){
+    for (j in 2:length(b_frame$BTS)){
+      #for (j in 2:11){
+      tmp_old <- tmp_list[[j-1]]
+      tmp_new <- generateTMPshift(spurplanKnoten, b_frame$BTS[j], 0, 0)
+      res <- calcShift(tmp_old, tmp_new)
+      if(is.null(res)){stop(paste(j, "error in calcShift"))}
+      b_frame$SHIFT_X[j] <- res[1]
+      b_frame$SHIFT_Y[j] <- res[2]
+      tmp_new <- generateTMPshift(spurplanKnoten, b_frame$BTS[j], b_frame$SHIFT_X[j], b_frame$SHIFT_Y[j])
+      gr_start <- tmp_new[TYPE == "Betriebsstellengrenze" & PARTNER == b_frame$BTS[j-1]]
+      if(j < length(b_frame$BTS)){
+        gr_end <- tmp_new[TYPE == "Betriebsstellengrenze" & PARTNER == b_frame$BTS[j+1]]
       }else{
-        distance <- c(distance, 0)
+        gr_end <- tmp_new[TYPE == "Fahrzeitmesspunkt"]
+        if(length(gr_end$CTR) < 1){
+          #last BTS with no FZMP :-/
+          gr_end <- tmp_new[TYPE == "Betriebsstellengrenze" & PARTNER != gr_start$PARTNER[1],]
+        }
       }
+      if(gr_start$PARTNER[1] == gr_end$PARTNER[1]){
+        # kopfmachen in j
+        gr_end <- tmp_new[TYPE == "Fahrzeitmesspunkt"]
+        kopfmachen_last <- T
+      }
+      if(((gr_end$X[1] - gr_start$X[1] ) >= 0) != is_steigend){
+        # rotate by x
+        fix_x <- tmp_new$X[tmp_new$PARTNER == b_frame$BTS[j-1]][1]
+        distance <- abs(tmp_new$X - fix_x)
+        #print(paste(j, "fix_x", fix_x, "dist", distance))
+        tmp_new$X <- fix_x + (-1 + 2*is_steigend) * distance
+        b_frame$ROTATE_X[j] <- T
+      }
+      # check rotate y
+      gr_old <- tmp_old[TYPE == "Betriebsstellengrenze" & PARTNER == b_frame$BTS[j]]
+      gr_new <- tmp_new[TYPE == "Betriebsstellengrenze" & PARTNER == b_frame$BTS[j-1]]
+      distance <- numeric(0)
+      for(i in 1:length(gr_old$CTR)){
+        d <- gr_new$Y[gr_new$NODE_NAME == gr_old$NODE_NAME[i] & gr_new$STRECKE == gr_old$STRECKE[i]]
+        if(length(d) == 1){
+          distance <- c(distance, d - gr_old$Y[i])
+        }else{
+          distance <- c(distance, 0)
+        }
 
-    }
-    if(sum(abs(distance)) > 0.1){
-      fix_y <- gr_old$Y[which.min(abs(distance))]
-      distance <- tmp_new$Y - fix_y
-      tmp_new$Y <- tmp_new$Y - (2*distance)
-      b_frame$ROTATE_Y[j] <- T
-    }
-    res <- calcShift(tmp_old, tmp_new)
-    if(is.null(res)){stop(paste(j, "error in calcShift"))}
-    b_frame$SHIFT_X[j] <- b_frame$SHIFT_X[j] + res[1]
-    b_frame$SHIFT_Y[j] <- b_frame$SHIFT_Y[j] + res[2]
-    tmp_new <- correctTMP(tmp_new, res)
+      }
+      if(sum(abs(distance)) > 0.1){
+        fix_y <- gr_old$Y[which.min(abs(distance))]
+        distance <- tmp_new$Y - fix_y
+        tmp_new$Y <- tmp_new$Y - (2*distance)
+        b_frame$ROTATE_Y[j] <- T
+      }
+      res <- calcShift(tmp_old, tmp_new)
+      if(is.null(res)){stop(paste(j, "error in calcShift"))}
+      b_frame$SHIFT_X[j] <- b_frame$SHIFT_X[j] + res[1]
+      b_frame$SHIFT_Y[j] <- b_frame$SHIFT_Y[j] + res[2]
+      tmp_new <- correctTMP(tmp_new, res)
 
-    tmp_list[[j]] <- tmp_new
-    #tmp_fw <- generateFWshift(tmp_list, ab_list[1:length(tmp_list)])
-    #p <- ggplot()
-    #p <- plotBTSFW(p, tmp_fw)
-    #p <- plotInfra(p, tmp_list)
-    #ggsave(filename = paste0("./WEBSERVICE/PLOTS/parts/", sprintf("%04d", j-1), ".jpg"),
-    #       plot = p, width = 200, height = 30, units = "cm", limitsize = F)
-    if(kopfmachen_last){
-      is_steigend <- !is_steigend
-      kopfmachen_last <- F
+      tmp_list[[j]] <- tmp_new
+      #tmp_fw <- generateFWshift(tmp_list, ab_list[1:length(tmp_list)])
+      #p <- ggplot()
+      #p <- plotBTSFW(p, tmp_fw)
+      #p <- plotInfra(p, tmp_list)
+      #ggsave(filename = paste0("./WEBSERVICE/PLOTS/parts/", sprintf("%04d", j-1), ".jpg"),
+      #       plot = p, width = 200, height = 30, units = "cm", limitsize = F)
+      if(kopfmachen_last){
+        is_steigend <- !is_steigend
+        kopfmachen_last <- F
+      }
     }
   }
+
   tmp_fw <- generateFWshift(tmp_list, ab_list)
   p <- plotBTSFW(ggplot(), tmp_fw)
   plotInfra(p, tmp_list)
@@ -181,77 +183,78 @@ plotOnlyInfra <- function(spurplanKnoten, bts_list){
   is_steigend <- T
   tmp_list[[1]]$Y <- -tmp_list[[1]]$Y
   kopfmachen_last <- F
-
-
-  for (j in 2:length(b_frame$BTS)){
-    #for (j in 2:11){
-    tmp_old <- tmp_list[[j-1]]
-    tmp_new <- generateTMPshift(spurplanKnoten, b_frame$BTS[j], 0, 0)
-    res <- calcShift(tmp_old, tmp_new)
-    if(is.null(res)){stop(paste(j, "error in calcShift"))}
-    b_frame$SHIFT_X[j] <- res[1]
-    b_frame$SHIFT_Y[j] <- res[2]
-    tmp_new <- generateTMPshift(spurplanKnoten, b_frame$BTS[j], b_frame$SHIFT_X[j], b_frame$SHIFT_Y[j])
-    gr_start <- tmp_new[TYPE == "Betriebsstellengrenze" & PARTNER == b_frame$BTS[j-1]]
-    if(j < length(b_frame$BTS)){
-      gr_end <- tmp_new[TYPE == "Betriebsstellengrenze" & PARTNER == b_frame$BTS[j+1]]
-    }else{
-      gr_end <- tmp_new[TYPE == "Fahrzeitmesspunkt"]
-      if(length(gr_end$CTR) < 1){
-        #last BTS with no FZMP :-/
-        gr_end <- tmp_new[TYPE == "Betriebsstellengrenze" & PARTNER != gr_start$PARTNER[1],]
-      }
-    }
-    if(gr_start$PARTNER[1] == gr_end$PARTNER[1]){
-      # kopfmachen in j
-      gr_end <- tmp_new[TYPE == "Fahrzeitmesspunkt"]
-      kopfmachen_last <- T
-    }
-    if(((gr_end$X[1] - gr_start$X[1] ) >= 0) != is_steigend){
-      # rotate by x
-      fix_x <- tmp_new$X[tmp_new$PARTNER == b_frame$BTS[j-1]][1]
-      distance <- abs(tmp_new$X - fix_x)
-      #print(paste(j, "fix_x", fix_x, "dist", distance))
-      tmp_new$X <- fix_x + (-1 + 2*is_steigend) * distance
-      b_frame$ROTATE_X[j] <- T
-    }
-    # check rotate y
-    gr_old <- tmp_old[TYPE == "Betriebsstellengrenze" & PARTNER == b_frame$BTS[j]]
-    gr_new <- tmp_new[TYPE == "Betriebsstellengrenze" & PARTNER == b_frame$BTS[j-1]]
-    distance <- numeric(0)
-    for(i in 1:length(gr_old$CTR)){
-      d <- gr_new$Y[gr_new$NODE_NAME == gr_old$NODE_NAME[i] & gr_new$STRECKE == gr_old$STRECKE[i]]
-      if(length(d) == 1){
-        distance <- c(distance, d - gr_old$Y[i])
+  if(length(b_frame$BTS) > 1){
+    for (j in 2:length(b_frame$BTS)){
+      #for (j in 2:11){
+      tmp_old <- tmp_list[[j-1]]
+      tmp_new <- generateTMPshift(spurplanKnoten, b_frame$BTS[j], 0, 0)
+      res <- calcShift(tmp_old, tmp_new)
+      if(is.null(res)){stop(paste(j, "error in calcShift"))}
+      b_frame$SHIFT_X[j] <- res[1]
+      b_frame$SHIFT_Y[j] <- res[2]
+      tmp_new <- generateTMPshift(spurplanKnoten, b_frame$BTS[j], b_frame$SHIFT_X[j], b_frame$SHIFT_Y[j])
+      gr_start <- tmp_new[TYPE == "Betriebsstellengrenze" & PARTNER == b_frame$BTS[j-1]]
+      if(j < length(b_frame$BTS)){
+        gr_end <- tmp_new[TYPE == "Betriebsstellengrenze" & PARTNER == b_frame$BTS[j+1]]
       }else{
-        distance <- c(distance, 0)
+        gr_end <- tmp_new[TYPE == "Fahrzeitmesspunkt"]
+        if(length(gr_end$CTR) < 1){
+          #last BTS with no FZMP :-/
+          gr_end <- tmp_new[TYPE == "Betriebsstellengrenze" & PARTNER != gr_start$PARTNER[1],]
+        }
       }
+      if(gr_start$PARTNER[1] == gr_end$PARTNER[1]){
+        # kopfmachen in j
+        gr_end <- tmp_new[TYPE == "Fahrzeitmesspunkt"]
+        kopfmachen_last <- T
+      }
+      if(((gr_end$X[1] - gr_start$X[1] ) >= 0) != is_steigend){
+        # rotate by x
+        fix_x <- tmp_new$X[tmp_new$PARTNER == b_frame$BTS[j-1]][1]
+        distance <- abs(tmp_new$X - fix_x)
+        #print(paste(j, "fix_x", fix_x, "dist", distance))
+        tmp_new$X <- fix_x + (-1 + 2*is_steigend) * distance
+        b_frame$ROTATE_X[j] <- T
+      }
+      # check rotate y
+      gr_old <- tmp_old[TYPE == "Betriebsstellengrenze" & PARTNER == b_frame$BTS[j]]
+      gr_new <- tmp_new[TYPE == "Betriebsstellengrenze" & PARTNER == b_frame$BTS[j-1]]
+      distance <- numeric(0)
+      for(i in 1:length(gr_old$CTR)){
+        d <- gr_new$Y[gr_new$NODE_NAME == gr_old$NODE_NAME[i] & gr_new$STRECKE == gr_old$STRECKE[i]]
+        if(length(d) == 1){
+          distance <- c(distance, d - gr_old$Y[i])
+        }else{
+          distance <- c(distance, 0)
+        }
 
-    }
-    if(sum(abs(distance)) > 0.1){
-      fix_y <- gr_old$Y[which.min(abs(distance))]
-      distance <- tmp_new$Y - fix_y
-      tmp_new$Y <- tmp_new$Y - (2*distance)
-      b_frame$ROTATE_Y[j] <- T
-    }
-    res <- calcShift(tmp_old, tmp_new)
-    if(is.null(res)){stop(paste(j, "error in calcShift"))}
-    b_frame$SHIFT_X[j] <- b_frame$SHIFT_X[j] + res[1]
-    b_frame$SHIFT_Y[j] <- b_frame$SHIFT_Y[j] + res[2]
-    tmp_new <- correctTMP(tmp_new, res)
+      }
+      if(sum(abs(distance)) > 0.1){
+        fix_y <- gr_old$Y[which.min(abs(distance))]
+        distance <- tmp_new$Y - fix_y
+        tmp_new$Y <- tmp_new$Y - (2*distance)
+        b_frame$ROTATE_Y[j] <- T
+      }
+      res <- calcShift(tmp_old, tmp_new)
+      if(is.null(res)){stop(paste(j, "error in calcShift"))}
+      b_frame$SHIFT_X[j] <- b_frame$SHIFT_X[j] + res[1]
+      b_frame$SHIFT_Y[j] <- b_frame$SHIFT_Y[j] + res[2]
+      tmp_new <- correctTMP(tmp_new, res)
 
-    tmp_list[[j]] <- tmp_new
-    #tmp_fw <- generateFWshift(tmp_list, ab_list[1:length(tmp_list)])
-    #p <- ggplot()
-    #p <- plotBTSFW(p, tmp_fw)
-    #p <- plotInfra(p, tmp_list)
-    #ggsave(filename = paste0("./WEBSERVICE/PLOTS/parts/", sprintf("%04d", j-1), ".jpg"),
-    #       plot = p, width = 200, height = 30, units = "cm", limitsize = F)
-    if(kopfmachen_last){
-      is_steigend <- !is_steigend
-      kopfmachen_last <- F
+      tmp_list[[j]] <- tmp_new
+      #tmp_fw <- generateFWshift(tmp_list, ab_list[1:length(tmp_list)])
+      #p <- ggplot()
+      #p <- plotBTSFW(p, tmp_fw)
+      #p <- plotInfra(p, tmp_list)
+      #ggsave(filename = paste0("./WEBSERVICE/PLOTS/parts/", sprintf("%04d", j-1), ".jpg"),
+      #       plot = p, width = 200, height = 30, units = "cm", limitsize = F)
+      if(kopfmachen_last){
+        is_steigend <- !is_steigend
+        kopfmachen_last <- F
+      }
     }
   }
+
   plotInfra(ggplot(), tmp_list)
 }
 
