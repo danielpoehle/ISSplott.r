@@ -1,6 +1,7 @@
 #setwd("./Dokumente/ISSplott.r/")
 library(data.table)
 library(ggplot2)
+library(staplr)
 
 options(expressions=500000)
 
@@ -18,16 +19,16 @@ betriebsstellenfahrwege <- as.data.table(read.csv2(file = btsfwFile, stringsAsFa
 # fileName <- list.files("./WEBSERVICE", pattern = "*.csv", full.names = T)[2]
 # fName <- list.files("./WEBSERVICE", pattern = "*.csv", full.names = F)[2]
 
-plotAllRoutes <- function(folderName, targetFolder){
+plotAllRoutes <- function(folderName, tempFolder, targetFolder){
   files <- list.files(folderName, pattern = "*.csv", full.names = T)
   fileNames <- list.files(folderName, pattern = "*.csv", full.names = F)
   for(i in 1:length(files)){
     print(fileNames[i])
-    plotWayWebservice(files[i], fileNames[i], spurplanKnoten, betriebsstellenfahrwege, targetFolder)
+    plotWayWebservice(files[i], fileNames[i], spurplanKnoten, betriebsstellenfahrwege, tempFolder, targetFolder)
   }
 }
 
-plotWayWebservice <-function(file, fileName, spurplanKnoten, betriebsstellenfahrwege, targetFolder){
+plotWayWebservice <-function(file, fileName, spurplanKnoten, betriebsstellenfahrwege, tempFolder, targetFolder){
   df <- read.csv2(file, stringsAsFactors = F)
   bts_list <- df$RIL100
   fw_list <- df$DurchfahrtFahrweg
@@ -48,6 +49,7 @@ plotWayWebservice <-function(file, fileName, spurplanKnoten, betriebsstellenfahr
       }
   }
   anz <- ceiling(length(bts_list)/150.0)
+  stapleNames <- integer(0)
 
   for(k in 1:anz){
     range <- (1+(k-1)*150):(150+(k-1)*150)
@@ -61,10 +63,13 @@ plotWayWebservice <-function(file, fileName, spurplanKnoten, betriebsstellenfahr
     p <- plotBTS(spurplanKnoten, prt_bts_list, prt_fw_list, prt_ab_list)
     wd <- min(600, 6*length(prt_bts_list))
     he <- min(30, 7+length(prt_bts_list)*0.1)
-    ggsave(filename = paste0(targetFolder, unlist(strsplit(fileName, "\\."))[1], "_", sprintf("%03d", k), ".pdf"),
+    tmpFileName <- paste0(tempFolder, "/", unlist(strsplit(fileName, "\\."))[1], "_", sprintf("%03d", k), ".pdf")
+    tmpFileName <- gsub(" ", "__", tmpFileName)
+    stapleNames <- c(stapleNames, tmpFileName)
+    ggsave(filename = tmpFileName,
            plot = p, width = wd, height = he, units = "cm", limitsize = F)
   }
-
+  staple_pdf(input_files = stapleNames, output_filepath = paste0(targetFolder, unlist(strsplit(fileName, "\\."))[1], ".pdf"))
 
 }
 
