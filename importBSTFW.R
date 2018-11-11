@@ -12,7 +12,7 @@ betriebsstellenfahrwege <- data.table()
     print(files[j])
     spurplan <- readLines(files[j], encoding = "latin1")
     tree <- xmlTreeParse(spurplan, asText=TRUE)
-    
+
     bts <- tree[[1]][["XmlIssDaten"]][["Spurplanbetriebsstellen"]]
     num_bts <- length(bts)
     for(k in 1:num_bts){
@@ -41,24 +41,29 @@ betriebsstellenfahrwege <- data.table()
         if(!is.null(btsfw[[m]][["Attribute"]])){
           attribute <- paste(as.character(unlist(xmlChildren(btsfw[[m]][["Attribute"]]))), collapse = "#")
         }
+        abwDW <- F
+        if(!is.null(btsfw[[m]][["AbwDurchrutschweg"]])){
+          abwDW <- T
+        }
         fzmp_id <- ""
         if(!is.null(btsfw[[m]][["Fahrzeitmesspunkt"]])){
           fzmp_id <- xmlGetAttr(btsfw[[m]][["Fahrzeitmesspunkt"]], "ID")
         }
-        
+
         abschnitte <- ""
         betriebsstellenfahrwege <- rbind(betriebsstellenfahrwege, data.table(ID = counter, BTS_NAME = bts_name,
                                                                              FW_NAME = name, PRIO = prio,
                                                                              START_ID = start_id, START_TYP = start_typ,
                                                                              END_ID = end_id, END_TYP = end_typ,
                                                                              VERLAUF = verlauf, ATTRIBUTE = attribute,
-                                                                             FZMP_ID = fzmp_id, ABSCHNITTE = abschnitte))
+                                                                             FZMP_ID = fzmp_id, ABSCHNITTE = abschnitte,
+                                                                             ABW_DW = abwDW))
       }
     }
   }
 
 
-redVerlauf <- c("Weichenstamm", "WeichenabzweigLinks", "WeichenabzweigRechts", "KreuzungsweicheAnfangLinks", 
+redVerlauf <- c("Weichenstamm", "WeichenabzweigLinks", "WeichenabzweigRechts", "KreuzungsweicheAnfangLinks",
                 "KreuzungsweicheEndeLinks")
 
 
@@ -156,7 +161,7 @@ for(b in 1:length(betriebsstellenfahrwege$ID)){
         }
       }
       if(length(v) > 0){stop("wrong path of btsfw!")}
-      if(end_ab$NODE_ID != tmp_fw$END_ID && 
+      if(end_ab$NODE_ID != tmp_fw$END_ID &&
          spurplanKnoten$X[spurplanKnoten$NODE_ID == tmp_fw$END_ID & spurplanKnoten$BTS_NAME == tmp_fw$BTS_NAME] != ""){stop("wrong exit of btsfw!")}
     }
   }else{

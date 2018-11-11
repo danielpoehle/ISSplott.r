@@ -5,7 +5,7 @@
 
 
 # install package dependencies if necessary
-listOfPackages <- c("ggplot2", "data.table", "staplr")
+listOfPackages <- c("ggplot2", "data.table")
 new.packages <- listOfPackages[!(listOfPackages %in% installed.packages()[,"Package"])]
 if(length(new.packages)){install.packages(new.packages)}
 

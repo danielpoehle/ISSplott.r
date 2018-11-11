@@ -1,7 +1,19 @@
 #setwd("./Dokumente/ISSplott.r/")
 library(data.table)
 library(ggplot2)
-library(staplr)
+#library(staplr)
+
+mergePDF <- function(infiles, outfile, os = "UNIX") {
+  version = switch(os,
+                   UNIX = "gs",
+                   Win32 = "gswin32c",
+                   Win64 = "gswin64c")
+  pre = " -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile="
+  system(paste(paste(version, pre, outfile, sep = ""), infiles, collapse = " "))
+}
+
+
+
 
 options(expressions=500000)
 
@@ -64,12 +76,15 @@ plotWayWebservice <-function(file, fileName, spurplanKnoten, betriebsstellenfahr
     wd <- min(600, 6*length(prt_bts_list))
     he <- min(30, 7+length(prt_bts_list)*0.1)
     tmpFileName <- paste0(tempFolder, "/", unlist(strsplit(fileName, "\\."))[1], "_", sprintf("%03d", k), ".pdf")
-    tmpFileName <- gsub(" ", "__", tmpFileName)
+    tmpFileName <- gsub("\\)", "", gsub("\\(", "", gsub(" ", "__", tmpFileName)))
     stapleNames <- c(stapleNames, tmpFileName)
     ggsave(filename = tmpFileName,
            plot = p, width = wd, height = he, units = "cm", limitsize = F)
   }
-  staple_pdf(input_files = stapleNames, output_filepath = paste0(targetFolder, unlist(strsplit(fileName, "\\."))[1], ".pdf"))
+  #print(paste(stapleNames, collapse = " "))
+  oFile <- gsub("\\)", "", gsub("\\(", "", gsub(" ", "__", paste0(targetFolder, unlist(strsplit(fileName, "\\."))[1], ".pdf"))))
+  mergePDF(infiles =  paste(stapleNames, collapse = " "), outfile = oFile)
+  #staple_pdf(input_files = stapleNames, output_filepath = paste0(targetFolder, unlist(strsplit(fileName, "\\."))[1], ".pdf"))
 
 }
 
